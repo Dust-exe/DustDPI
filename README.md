@@ -2,6 +2,7 @@
 
 > **Zero Collateral Damage, High-Performance Selective Windows DPI Circumvention Engine for Turkey Blocked Platforms (Discord, Roblox & More)**
 
+[![Download Setup](https://img.shields.io/badge/Download-DustDPI__Setup.exe-brightgreen?style=for-the-badge&logo=windows)|(https://github.com/Dust-exe/DustDPI/releases/download/v1.0.0/DustDPI_Setup.exe)
 [![Target](https://img.shields.io/badge/Target-Discord%20%7C%20Roblox-7c3aed?style=for-the-badge&logo=discord&logoColor=white)](https://dust-studio.com)
 [![Engine](https://img.shields.io/badge/Engine-WinDivert%20v1.4-a855f7?style=for-the-badge)](https://dust-studio.com)
 [![Status](https://img.shields.io/badge/Antigravity%20Compatible-Verified-10b981?style=for-the-badge)](https://dust-studio.com)
