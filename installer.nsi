@@ -22,7 +22,7 @@ VIAddVersionKey "OriginalFilename" "DustDPI_Setup.exe"
 !define PRODUCT_VERSION "1.0.0"
 !define PRODUCT_PUBLISHER "Dust Studio"
 !define PRODUCT_WEB_SITE "https://dust-studio.com"
-!define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\DustDPI.bat"
+!define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\DustDPI.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 
@@ -35,8 +35,8 @@ VIAddVersionKey "OriginalFilename" "DustDPI_Setup.exe"
 !insertmacro MUI_PAGE_INSTFILES
 
 ; Finish Page options
-!define MUI_FINISHPAGE_RUN "$INSTDIR\DustDPI_Manager.bat"
-!define MUI_FINISHPAGE_RUN_TEXT "DustDPI Manager'ı Çalıştır"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\DustDPI.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "DustDPI'ı Calistir"
 !insertmacro MUI_PAGE_FINISH
 
 ; Uninstaller Pages
@@ -50,7 +50,8 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite on
 
-  ; Copy all program files
+  ; Copy all program files and GUI
+  File "DustDPI.exe"
   File "DustDPI_Manager.bat"
   File "blacklist.txt"
   File "service_install.cmd"
@@ -77,31 +78,31 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
 
   ; 1. Eski servisleri temizle
-  nsExec::ExecToLog 'sc.exe stop "DustDPI"'
-  nsExec::ExecToLog 'sc.exe delete "DustDPI"'
   nsExec::ExecToLog 'sc.exe stop "GoodbyeDPI"'
   nsExec::ExecToLog 'sc.exe delete "GoodbyeDPI"'
+  nsExec::ExecToLog 'sc.exe stop "DustDPI"'
+  nsExec::ExecToLog 'sc.exe delete "DustDPI"'
 
-  ; 2. Yeni DustDPI servisini kur
+  ; 2. Yeni GoodbyeDPI servisini kur (DisplayName = DustDPI)
   ${If} ${RunningX64}
-    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\goodbyedpi.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto'
+    nsExec::ExecToLog 'sc.exe create "GoodbyeDPI" binPath= "\"$INSTDIR\x86_64\goodbyedpi.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"'
   ${Else}
-    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\goodbyedpi.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto'
+    nsExec::ExecToLog 'sc.exe create "GoodbyeDPI" binPath= "\"$INSTDIR\x86\goodbyedpi.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"'
   ${EndIf}
 
-  nsExec::ExecToLog 'sc.exe description "DustDPI" "Dust Studio Selective DPI Circumvention Service"'
-  nsExec::ExecToLog 'sc.exe start "DustDPI"'
+  nsExec::ExecToLog 'sc.exe description "GoodbyeDPI" "Dust Studio Selective DPI Circumvention Service"'
+  nsExec::ExecToLog 'sc.exe start "GoodbyeDPI"'
 
   ; Shortcuts
   CreateDirectory "$SMPROGRAMS\DustDPI"
-  CreateShortcut "$SMPROGRAMS\DustDPI\DustDPI Manager.lnk" "$INSTDIR\DustDPI_Manager.bat" "" "$INSTDIR\app.ico" 0
-  CreateShortcut "$SMPROGRAMS\DustDPI\Servisi Başlat.lnk" "$INSTDIR\start_service.cmd" "" "$INSTDIR\app.ico" 0
+  CreateShortcut "$SMPROGRAMS\DustDPI\DustDPI.lnk" "$INSTDIR\DustDPI.exe" "" "$INSTDIR\app.ico" 0
+  CreateShortcut "$SMPROGRAMS\DustDPI\Servisi Baslat.lnk" "$INSTDIR\start_service.cmd" "" "$INSTDIR\app.ico" 0
   CreateShortcut "$SMPROGRAMS\DustDPI\Servisi Durdur.lnk" "$INSTDIR\stop_service.cmd" "" "$INSTDIR\app.ico" 0
   CreateShortcut "$SMPROGRAMS\DustDPI\Hedef Listesi (Blacklist).lnk" "notepad.exe" "$INSTDIR\blacklist.txt"
-  CreateShortcut "$SMPROGRAMS\DustDPI\Kaldır (Uninstall).lnk" "$INSTDIR\uninst.exe" "" "$INSTDIR\uninst.exe" 0
+  CreateShortcut "$SMPROGRAMS\DustDPI\Kaldir (Uninstall).lnk" "$INSTDIR\uninst.exe" "" "$INSTDIR\uninst.exe" 0
 
-  ; Desktop Shortcut
-  CreateShortcut "$DESKTOP\DustDPI Manager.lnk" "$INSTDIR\DustDPI_Manager.bat" "" "$INSTDIR\app.ico" 0
+  ; Desktop Shortcut (Opens GUI)
+  CreateShortcut "$DESKTOP\DustDPI.lnk" "$INSTDIR\DustDPI.exe" "" "$INSTDIR\app.ico" 0
 SectionEnd
 
 Section -AdditionalIcons
@@ -112,7 +113,7 @@ Section -Post
   WriteUninstaller "$INSTDIR\uninst.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\app.ico"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\DustDPI.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
@@ -120,16 +121,18 @@ SectionEnd
 
 Function un.onUninstSuccess
   HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) başarıyla bilgisayarınızdan kaldırıldı."
+  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) basariyla bilgisayarinizdan kaldirildi."
 FunctionEnd
 
 Function un.onInit
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "$(^Name) ve tüm bileşenlerini kaldırmak istediğinizden emin misiniz?" IDYES +2
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "$(^Name) ve tum bilesenlerini kaldirmak istediginizden emin misiniz?" IDYES +2
   Abort
 FunctionEnd
 
 Section Uninstall
   ; Servisi ve sürücüleri durdurup sil
+  nsExec::ExecToLog 'sc.exe stop "GoodbyeDPI"'
+  nsExec::ExecToLog 'sc.exe delete "GoodbyeDPI"'
   nsExec::ExecToLog 'sc.exe stop "DustDPI"'
   nsExec::ExecToLog 'sc.exe delete "DustDPI"'
   nsExec::ExecToLog 'sc.exe stop "WinDivert"'
@@ -138,7 +141,7 @@ Section Uninstall
   nsExec::ExecToLog 'sc.exe delete "WinDivert14"'
 
   ; Kısayolları sil
-  Delete "$DESKTOP\DustDPI Manager.lnk"
+  Delete "$DESKTOP\DustDPI.lnk"
   Delete "$SMPROGRAMS\DustDPI\*.*"
   RMDir "$SMPROGRAMS\DustDPI"
 

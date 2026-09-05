@@ -1,8 +1,8 @@
 @ECHO OFF
-TITLE DustDPI — Durum Kontrolu
+TITLE DustDPI - Durum Kontrolu
 echo ========================================================
 echo   DustDPI Servis Durumu:
 echo ========================================================
-sc query "DustDPI"
+sc query "GoodbyeDPI"
 echo.
 pause
