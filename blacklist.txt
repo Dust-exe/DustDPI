@@ -1,0 +1,38 @@
+# ══════════════════════════════════════════════════════════
+#              🎯 DustDPI — Hedef Alan Adları Listesi
+# ══════════════════════════════════════════════════════════
+# Yalnızca bu listedeki alan adlarına ve alt alan adlarına (subdomain)
+# DPI atlatma (desync/fragmentation) uygulanır.
+#
+# Antigravity IDE, Google, GitHub, Steam ve bankacılık gibi
+# masum/hassas uygulamalar bu listede OLMADIĞI için asla etkilenmez.
+# ══════════════════════════════════════════════════════════
+
+# ─── Discord Ekosistemi ───
+discord.com
+discord.gg
+discord.co
+discord.media
+discordapp.com
+discordapp.net
+discordstatus.com
+gateway.discord.gg
+cdn.discordapp.com
+media.discordapp.net
+images-ext-1.discordapp.net
+images-ext-2.discordapp.net
+dl-media.discordapp.net
+dis.gd
+
+# ─── Roblox Ekosistemi ───
+roblox.com
+rbxcdn.com
+robloxlabs.com
+setup.rbxcdn.com
+
+# ─── Türkiye'de Engelli Diğer Popüler Platformlar ───
+wattpad.com
+pastebin.com
+proton.me
+protonmail.com
+protonvpn.com
