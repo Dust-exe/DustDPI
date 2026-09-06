@@ -60,6 +60,10 @@ Section "MainSection" SEC01
   nsExec::ExecToLog 'sc.exe stop "WinDivert14"'
   Sleep 1500
 
+  ; Eski artik dosyalari temizle
+  Delete "$INSTDIR\x86_64\goodbyedpi.exe"
+  Delete "$INSTDIR\x86\goodbyedpi.exe"
+
   SetOutPath "$INSTDIR"
   SetOverwrite on
 
