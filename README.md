@@ -1,8 +1,13 @@
 # DustDPI
 
+[![Official Website](https://img.shields.io/badge/Official%20Site-dust--studio.com%2Fdustdpi-7c3aed?style=for-the-badge)](https://dust-studio.com/dustdpi)
+[![Author](https://img.shields.io/badge/Author-dust.exe-blueviolet?style=for-the-badge)](https://dust-studio.com)
+[![Discord Community](https://img.shields.io/badge/Discord-Dust%20Studio-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/E8K6rczdb2)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?style=for-the-badge&logo=windows)](https://github.com/Dust-exe/DustDPI/releases)
+
 **Next-Generation Internet Freedom & Selective Traffic Optimization Engine**
 
-DustDPI is a lightweight, driver-level network optimization service engineered to deliver unrestricted, ultra-low latency web browsing and application connectivity. By operating selectively at the packet level, DustDPI eliminates routing interference and packet inspection delays without the bandwidth degradation or latency penalties associated with traditional VPNs.
+DustDPI is an open-source, driver-level network optimization service engineered to deliver unrestricted, ultra-low latency web browsing and application connectivity. Official landing page & link profile: [https://dust-studio.com/dustdpi](https://dust-studio.com/dustdpi). By operating selectively at the packet level, DustDPI eliminates routing interference and packet inspection delays without the bandwidth degradation or latency penalties associated with traditional VPNs.
 
 ---
 
