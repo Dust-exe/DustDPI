@@ -18,8 +18,8 @@ PUSHD "%~dp0"
 CLS
 COLOR 0D
 echo ====================================================================
-echo          Dust Studio - DustDPI Selective Control Matrix
-echo          Engelsiz Erisim  -  Sifir Yan Etki  -  Sifir Gecikme
+echo          Dust Studio - DustDPI Selective Network Service
+echo          Secici Ag Optimizasyonu  -  Sifir Yan Etki  -  Yuksek Hiz
 echo ====================================================================
 echo.
 echo   [1] DustDPI Servisini Kur ve Baslat (Otomatik Baslangic)

@@ -18,8 +18,8 @@ sc stop "DustDPI" >nul 2>&1
 sc delete "DustDPI" >nul 2>&1
 
 echo [*] DustDPI Secici Servisi olusturuluyor...
-sc create "DustDPI" binPath= "\"%CD%\%_arch%\dust_engine.exe\" -5 --set-ttl 5 --blacklist \"%CD%\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"
-sc description "DustDPI" "Dust Studio Secici DPI Atlatma Servisi - Discord, Roblox ve hedef platformlar"
+sc create "DustDPI" binPath= "\"%CD%\%_arch%\dust_engine.exe\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"%CD%\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"
+sc description "DustDPI" "Dust Studio Secici Ag Optimizasyon ve Paket Yonetim Servisi"
 
 echo [*] DustDPI servisi baslatiliyor...
 sc start "DustDPI"

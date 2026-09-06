@@ -1,10 +1,12 @@
 #define WIN32_LEAN_AND_MEAN
+#define UNICODE
+#define _UNICODE
 #include <windows.h>
 #include <shellapi.h>
 #include <commctrl.h>
 #include <dwmapi.h>
 #include <string>
-#include <sstream>
+#include <vector>
 
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
@@ -20,9 +22,9 @@
 #define IDC_BTN_START     101
 #define IDC_BTN_STOP      102
 #define IDC_BTN_RESTART   103
-#define IDC_BTN_INSTALL   104
-#define IDC_BTN_BLACKLIST 105
-#define IDC_BTN_CONSOLE   106
+#define IDC_BTN_BLACKLIST 104
+#define IDC_BTN_CONSOLE   105
+#define IDC_BTN_INSTALL   106
 
 enum ServiceState {
     STATE_UNKNOWN,
@@ -33,7 +35,7 @@ enum ServiceState {
     STATE_RUNNING
 };
 
-static NOTIFYICONDATA g_nid = {0};
+static NOTIFYICONDATAW g_nid = {0};
 static HWND g_hMainWnd = NULL;
 static HBRUSH g_hBgBrush = NULL;
 static HBRUSH g_hCardBrush = NULL;
@@ -41,23 +43,25 @@ static HFONT g_hFontTitle = NULL;
 static HFONT g_hFontNormal = NULL;
 static HFONT g_hFontStatus = NULL;
 static HFONT g_hFontSub = NULL;
+static HFONT g_hFontBtn = NULL;
 static ServiceState g_curState = STATE_UNKNOWN;
-static char g_appDir[MAX_PATH] = {0};
+static wchar_t g_appDir[MAX_PATH] = {0};
+static int g_hoverBtnId = 0;
 
-std::string GetAppDirectory() {
-    if (g_appDir[0] == '\0') {
-        GetModuleFileNameA(NULL, g_appDir, MAX_PATH);
-        char* lastSlash = strrchr(g_appDir, '\\');
-        if (lastSlash) *lastSlash = '\0';
+std::wstring GetAppDirectoryW() {
+    if (g_appDir[0] == L'\0') {
+        GetModuleFileNameW(NULL, g_appDir, MAX_PATH);
+        wchar_t* lastSlash = wcsrchr(g_appDir, L'\\');
+        if (lastSlash) *lastSlash = L'\0';
     }
-    return std::string(g_appDir);
+    return std::wstring(g_appDir);
 }
 
 ServiceState QueryDpiService() {
-    SC_HANDLE scm = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
+    SC_HANDLE scm = OpenSCManagerW(NULL, NULL, SC_MANAGER_CONNECT);
     if (!scm) return STATE_UNKNOWN;
 
-    SC_HANDLE svc = OpenServiceA(scm, "DustDPI", SERVICE_QUERY_STATUS);
+    SC_HANDLE svc = OpenServiceW(scm, L"DustDPI", SERVICE_QUERY_STATUS);
     if (!svc) {
         CloseServiceHandle(scm);
         return STATE_NOT_INSTALLED;
@@ -80,75 +84,100 @@ ServiceState QueryDpiService() {
     return st;
 }
 
-void RunCmdAsync(const std::string& cmd, bool elevated = false) {
-    ShellExecuteA(NULL, elevated ? "runas" : "open", "cmd.exe", ("/c " + cmd).c_str(), GetAppDirectory().c_str(), SW_HIDE);
+void RunCmdAsyncW(const std::wstring& cmd, bool elevated = false) {
+    ShellExecuteW(NULL, elevated ? L"runas" : L"open", L"cmd.exe", (L"/c " + cmd).c_str(), GetAppDirectoryW().c_str(), SW_HIDE);
 }
 
 void ActionStartService() {
-    RunCmdAsync("sc.exe start \"DustDPI\"", true);
+    RunCmdAsyncW(L"sc.exe start \"DustDPI\"", true);
 }
 
 void ActionStopService() {
-    RunCmdAsync("sc.exe stop \"DustDPI\"", true);
+    RunCmdAsyncW(L"sc.exe stop \"DustDPI\"", true);
 }
 
 void ActionRestartService() {
-    RunCmdAsync("sc.exe stop \"DustDPI\" & timeout /t 1 & sc.exe start \"DustDPI\"", true);
+    RunCmdAsyncW(L"sc.exe stop \"DustDPI\" & timeout /t 1 & sc.exe start \"DustDPI\"", true);
 }
 
 void ActionInstallService() {
-    std::string dir = GetAppDirectory();
-    std::string exe64 = dir + "\\x86_64\\dust_engine.exe";
-    std::string bl = dir + "\\blacklist.txt";
-    std::string cmd = "sc.exe stop \"DustDPI\" & sc.exe delete \"DustDPI\" & ";
-    cmd += "sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + "\\\" -5 --set-ttl 5 --blacklist \\\"" + bl + "\\\"\" start= auto DisplayName= \"DustDPI - Selective Service\" & ";
-    cmd += "sc.exe description \"DustDPI\" \"Dust Studio Selective DPI Circumvention Service\" & ";
-    cmd += "sc.exe start \"DustDPI\"";
-    RunCmdAsync(cmd, true);
+    std::wstring dir = GetAppDirectoryW();
+    std::wstring exe64 = dir + L"\\x86_64\\dust_engine.exe";
+    std::wstring bl = dir + L"\\blacklist.txt";
+    std::wstring cmd = L"sc.exe stop \"DustDPI\" & sc.exe delete \"DustDPI\" & ";
+    cmd += L"sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + L"\\\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \\\"" + bl + L"\\\"\" start= auto DisplayName= \"DustDPI Service\" & ";
+    cmd += L"sc.exe description \"DustDPI\" \"Dust Studio Selective Network Optimization Service\" & ";
+    cmd += L"sc.exe start \"DustDPI\"";
+    RunCmdAsyncW(cmd, true);
 }
 
 void ActionEditBlacklist() {
-    std::string bl = GetAppDirectory() + "\\blacklist.txt";
-    ShellExecuteA(NULL, "open", "notepad.exe", bl.c_str(), NULL, SW_SHOW);
+    std::wstring bl = GetAppDirectoryW() + L"\\blacklist.txt";
+    ShellExecuteW(NULL, L"open", L"notepad.exe", bl.c_str(), NULL, SW_SHOW);
 }
 
 void ActionRunConsole() {
-    std::string dir = GetAppDirectory();
-    std::string exe64 = dir + "\\x86_64\\dust_engine.exe";
-    std::string bl = dir + "\\blacklist.txt";
-    std::string args = "/k title DustDPI Console Test & \"" + exe64 + "\" -5 --set-ttl 5 --blacklist \"" + bl + "\"";
-    ShellExecuteA(NULL, "runas", "cmd.exe", args.c_str(), dir.c_str(), SW_SHOW);
+    std::wstring dir = GetAppDirectoryW();
+    std::wstring exe64 = dir + L"\\x86_64\\dust_engine.exe";
+    std::wstring bl = dir + L"\\blacklist.txt";
+    std::wstring args = L"/k title DustDPI Console Test & \"" + exe64 + L"\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"" + bl + L"\"";
+    ShellExecuteW(NULL, L"runas", L"cmd.exe", args.c_str(), dir.c_str(), SW_SHOW);
 }
 
-void SetupTray(HWND hWnd) {
-    g_nid.cbSize = sizeof(NOTIFYICONDATA);
+void SetupTrayW(HWND hWnd) {
+    g_nid.cbSize = sizeof(NOTIFYICONDATAW);
     g_nid.hWnd = hWnd;
     g_nid.uID = 1;
     g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     g_nid.uCallbackMessage = WM_TRAYICON;
-    g_nid.hIcon = (HICON)GetClassLongPtr(hWnd, GCLP_HICON);
+    g_nid.hIcon = (HICON)GetClassLongPtrW(hWnd, GCLP_HICON);
     if (!g_nid.hIcon) {
-        g_nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+        g_nid.hIcon = LoadIconW(NULL, IDI_APPLICATION);
     }
-    strcpy(g_nid.szTip, "Dust Studio — DustDPI Control Matrix");
-    Shell_NotifyIconA(NIM_ADD, &g_nid);
+    wcscpy(g_nid.szTip, L"Dust Studio - DustDPI Service Manager");
+    Shell_NotifyIconW(NIM_ADD, &g_nid);
 }
 
-void ShowTrayMenu(HWND hWnd) {
+void ShowTrayMenuW(HWND hWnd) {
     POINT pt;
     GetCursorPos(&pt);
     HMENU hMenu = CreatePopupMenu();
-    AppendMenuA(hMenu, MF_STRING, ID_TRAY_SHOW, "DustDPI Penceresini Ac");
-    AppendMenuA(hMenu, MF_SEPARATOR, 0, NULL);
-    AppendMenuA(hMenu, MF_STRING, ID_TRAY_START, "Servisi Baslat");
-    AppendMenuA(hMenu, MF_STRING, ID_TRAY_STOP, "Servisi Durdur");
-    AppendMenuA(hMenu, MF_STRING, ID_TRAY_EDIT, "Hedef Listesini Duzenle (blacklist.txt)");
-    AppendMenuA(hMenu, MF_SEPARATOR, 0, NULL);
-    AppendMenuA(hMenu, MF_STRING, ID_TRAY_EXIT, "Cikis");
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_SHOW, L"DustDPI Kontrol Panelini Ac");
+    AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_START, L"Servisi Baslat");
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_STOP, L"Servisi Durdur");
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_EDIT, L"Hedef Listesini Duzenle (blacklist.txt)");
+    AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT, L"Cikis");
 
     SetForegroundWindow(hWnd);
     TrackPopupMenu(hMenu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hWnd, NULL);
     DestroyMenu(hMenu);
+}
+
+// Custom button window procedure to handle hover states
+static WNDPROC g_oldBtnProc = NULL;
+static LRESULT CALLBACK CustomButtonProc(HWND hBtn, UINT msg, WPARAM wParam, LPARAM lParam) {
+    int id = GetWindowLong(hBtn, GWL_ID);
+    switch (msg) {
+        case WM_MOUSEMOVE: {
+            if (g_hoverBtnId != id) {
+                g_hoverBtnId = id;
+                InvalidateRect(hBtn, NULL, FALSE);
+                TRACKMOUSEEVENT tme = { sizeof(TRACKMOUSEEVENT), TME_LEAVE, hBtn, 0 };
+                TrackMouseEvent(&tme);
+            }
+            break;
+        }
+        case WM_MOUSELEAVE: {
+            if (g_hoverBtnId == id) {
+                g_hoverBtnId = 0;
+                InvalidateRect(hBtn, NULL, FALSE);
+            }
+            break;
+        }
+    }
+    return CallWindowProcW(g_oldBtnProc, hBtn, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -160,44 +189,121 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             BOOL dark = TRUE;
             DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
 
-            // Fonts
-            g_hFontTitle = CreateFontA(24, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, "Segoe UI");
-            g_hFontSub = CreateFontA(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, "Segoe UI");
-            g_hFontStatus = CreateFontA(18, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, "Segoe UI");
-            g_hFontNormal = CreateFontA(15, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, "Segoe UI");
+            // Fonts: Segoe UI ClearType
+            g_hFontTitle = CreateFontW(26, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
+            g_hFontSub = CreateFontW(13, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
+            g_hFontStatus = CreateFontW(17, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
+            g_hFontNormal = CreateFontW(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
+            g_hFontBtn = CreateFontW(15, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
 
-            // Brushes (Obsidian dark palette #0D0B14 and card #171424)
-            g_hBgBrush = CreateSolidBrush(RGB(13, 11, 20));
-            g_hCardBrush = CreateSolidBrush(RGB(23, 20, 36));
+            // Brushes (Modern dark palette: #0b0f19 and card #161f30)
+            g_hBgBrush = CreateSolidBrush(RGB(11, 15, 25));
+            g_hCardBrush = CreateSolidBrush(RGB(22, 31, 48));
 
-            // Buttons
-            CreateWindowA("BUTTON", "▶  Servisi Baslat", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
-                          35, 175, 200, 38, hWnd, (HMENU)IDC_BTN_START, NULL, NULL);
+            // Grid buttons (BS_OWNERDRAW for smooth modern styling)
+            struct BtnDef {
+                int id;
+                const wchar_t* text;
+                int x, y, w, h;
+            };
 
-            CreateWindowA("BUTTON", "⏹  Servisi Durdur", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
-                          255, 175, 200, 38, hWnd, (HMENU)IDC_BTN_STOP, NULL, NULL);
+            BtnDef buttons[] = {
+                { IDC_BTN_START,     L"Servisi Baslat",           35, 185, 215, 42 },
+                { IDC_BTN_STOP,      L"Servisi Durdur",          265, 185, 215, 42 },
+                { IDC_BTN_RESTART,   L"Yeniden Baslat",           35, 240, 215, 42 },
+                { IDC_BTN_BLACKLIST, L"Hedef Listesi (Blacklist)",265, 240, 215, 42 },
+                { IDC_BTN_CONSOLE,   L"Canli Test Modu",          35, 295, 215, 42 },
+                { IDC_BTN_INSTALL,   L"Servisi Onar / Kur",      265, 295, 215, 42 }
+            };
 
-            CreateWindowA("BUTTON", "🔄  Yeniden Baslat", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
-                          35, 225, 200, 38, hWnd, (HMENU)IDC_BTN_RESTART, NULL, NULL);
-
-            CreateWindowA("BUTTON", "📝  Hedef Listesi (Blacklist)", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
-                          255, 225, 200, 38, hWnd, (HMENU)IDC_BTN_BLACKLIST, NULL, NULL);
-
-            CreateWindowA("BUTTON", "💻  Konsol Test Modu", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
-                          35, 275, 200, 38, hWnd, (HMENU)IDC_BTN_CONSOLE, NULL, NULL);
-
-            CreateWindowA("BUTTON", "⚙  Servisi Yeniden Kur", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
-                          255, 275, 200, 38, hWnd, (HMENU)IDC_BTN_INSTALL, NULL, NULL);
-
-            // Set buttons font
-            for (int id = IDC_BTN_START; id <= IDC_BTN_CONSOLE; id++) {
-                HWND hBtn = GetDlgItem(hWnd, id);
-                if (hBtn) SendMessage(hBtn, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
+            for (const auto& b : buttons) {
+                HWND hBtn = CreateWindowExW(
+                    0, L"BUTTON", b.text,
+                    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_OWNERDRAW,
+                    b.x, b.y, b.w, b.h, hWnd, (HMENU)(INT_PTR)b.id, NULL, NULL
+                );
+                if (!g_oldBtnProc) {
+                    g_oldBtnProc = (WNDPROC)GetWindowLongPtrW(hBtn, GWLP_WNDPROC);
+                }
+                SetWindowLongPtrW(hBtn, GWLP_WNDPROC, (LONG_PTR)CustomButtonProc);
             }
 
-            SetupTray(hWnd);
+            SetupTrayW(hWnd);
             SetTimer(hWnd, 1, 1000, NULL);
             g_curState = QueryDpiService();
+            break;
+        }
+
+        case WM_DRAWITEM: {
+            LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)lParam;
+            if (pDIS->CtlType == ODT_BUTTON) {
+                bool isHover = (g_hoverBtnId == (int)pDIS->CtlID);
+                bool isPressed = (pDIS->itemState & ODS_SELECTED);
+                
+                COLORREF bgColor;
+                COLORREF borderColor;
+                COLORREF textColor = RGB(241, 245, 249); // White text
+
+                if (pDIS->CtlID == IDC_BTN_START) {
+                    // Primary button: Vibrant Blue
+                    if (isPressed) {
+                        bgColor = RGB(29, 78, 216);
+                        borderColor = RGB(37, 99, 235);
+                    } else if (isHover) {
+                        bgColor = RGB(59, 130, 246);
+                        borderColor = RGB(96, 165, 250);
+                    } else {
+                        bgColor = RGB(37, 99, 235);
+                        borderColor = RGB(59, 130, 246);
+                    }
+                } else if (pDIS->CtlID == IDC_BTN_STOP) {
+                    // Secondary Danger: Dark Wine/Red
+                    if (isPressed) {
+                        bgColor = RGB(69, 26, 26);
+                        borderColor = RGB(185, 28, 28);
+                    } else if (isHover) {
+                        bgColor = RGB(127, 29, 29);
+                        borderColor = RGB(239, 68, 68);
+                    } else {
+                        bgColor = RGB(45, 20, 20);
+                        borderColor = RGB(127, 29, 29);
+                    }
+                } else {
+                    // Neutral Dark Slate buttons
+                    if (isPressed) {
+                        bgColor = RGB(15, 23, 42);
+                        borderColor = RGB(71, 85, 105);
+                    } else if (isHover) {
+                        bgColor = RGB(51, 65, 85);
+                        borderColor = RGB(100, 116, 139);
+                    } else {
+                        bgColor = RGB(30, 41, 59);
+                        borderColor = RGB(51, 65, 85);
+                    }
+                }
+
+                HBRUSH btnBrush = CreateSolidBrush(bgColor);
+                HPEN pen = CreatePen(PS_SOLID, 1, borderColor);
+                HGDIOBJ oldBrush = SelectObject(pDIS->hDC, btnBrush);
+                HGDIOBJ oldPen = SelectObject(pDIS->hDC, pen);
+
+                // Draw rounded rectangle button
+                RoundRect(pDIS->hDC, pDIS->rcItem.left, pDIS->rcItem.top, pDIS->rcItem.right, pDIS->rcItem.bottom, 8, 8);
+
+                SelectObject(pDIS->hDC, oldBrush);
+                SelectObject(pDIS->hDC, oldPen);
+                DeleteObject(btnBrush);
+                DeleteObject(pen);
+
+                // Draw button text
+                wchar_t btnText[64];
+                GetWindowTextW(pDIS->hwndItem, btnText, 64);
+                SetBkMode(pDIS->hDC, TRANSPARENT);
+                SetTextColor(pDIS->hDC, textColor);
+                SelectObject(pDIS->hDC, g_hFontBtn);
+                DrawTextW(pDIS->hDC, btnText, -1, &pDIS->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                return TRUE;
+            }
             break;
         }
 
@@ -240,52 +346,72 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
             RECT clientRect;
             GetClientRect(hWnd, &clientRect);
-
             FillRect(hdc, &clientRect, g_hBgBrush);
             SetBkMode(hdc, TRANSPARENT);
 
-            // Title
+            // App Title
             SelectObject(hdc, g_hFontTitle);
-            SetTextColor(hdc, RGB(245, 243, 255));
-            TextOutA(hdc, 35, 22, "DustDPI", 7);
+            SetTextColor(hdc, RGB(248, 250, 252));
+            TextOutW(hdc, 35, 20, L"DustDPI", 7);
 
             // Subtitle
             SelectObject(hdc, g_hFontSub);
-            SetTextColor(hdc, RGB(167, 139, 250));
-            TextOutA(hdc, 130, 29, "•  Secici DPI Bypass & Guvenlik Kalkanı", 41);
+            SetTextColor(hdc, RGB(96, 165, 250));
+            TextOutW(hdc, 140, 27, L"Secici Ag Optimizasyon ve Servis Yoneticisi", 42);
 
-            // Description
-            SetTextColor(hdc, RGB(161, 161, 170));
-            TextOutA(hdc, 35, 52, "Discord, Roblox ve Turkiye engelli hedefleri filtreler; diger uygulamalara dokunmaz.", 85);
+            // Explanation / Scope
+            SelectObject(hdc, g_hFontNormal);
+            SetTextColor(hdc, RGB(148, 163, 184));
+            TextOutW(hdc, 35, 52, L"Discord, Roblox ve hedef istemciler icin baglanti optimizasyonu saglar.", 68);
 
-            // Status Card Box
-            RECT cardRect = { 35, 85, 455, 145 };
-            FillRect(hdc, &cardRect, g_hCardBrush);
+            // Status Card (Panel: 35, 82, 480, 162)
+            RECT cardRect = { 35, 82, 480, 162 };
+            HBRUSH cardBrd = CreateSolidBrush(RGB(35, 47, 72));
+            HPEN cardPen = CreatePen(PS_SOLID, 1, RGB(35, 47, 72));
+            HGDIOBJ oldB = SelectObject(hdc, g_hCardBrush);
+            HGDIOBJ oldP = SelectObject(hdc, cardPen);
+            RoundRect(hdc, cardRect.left, cardRect.top, cardRect.right, cardRect.bottom, 10, 10);
+            SelectObject(hdc, oldB);
+            SelectObject(hdc, oldP);
+            DeleteObject(cardBrd);
+            DeleteObject(cardPen);
 
-            HBRUSH borderBrush = CreateSolidBrush(RGB(76, 29, 149));
-            FrameRect(hdc, &cardRect, borderBrush);
-            DeleteObject(borderBrush);
-
-            // Status Indicator
+            // Status Badge / Indicator
             SelectObject(hdc, g_hFontStatus);
             if (g_curState == STATE_RUNNING) {
-                SetTextColor(hdc, RGB(52, 211, 153));
-                TextOutA(hdc, 55, 103, "●  DURUM: AKTIF (DustDPI Calisiyor)", 35);
+                SetTextColor(hdc, RGB(52, 211, 153)); // Emerald green
+                TextOutW(hdc, 55, 96, L"[ DEVREDE ] - DustDPI Servisi Calisiyor", 38);
+
+                SelectObject(hdc, g_hFontSub);
+                SetTextColor(hdc, RGB(148, 163, 184));
+                TextOutW(hdc, 55, 126, L"Secici ag optimizasyonu ve yerel DNS yonlendirmesi devrede.", 58);
             } else if (g_curState == STATE_STOPPED) {
-                SetTextColor(hdc, RGB(248, 113, 113));
-                TextOutA(hdc, 55, 103, "●  DURUM: DURDURULDU (Servis Kapali)", 37);
+                SetTextColor(hdc, RGB(248, 113, 113)); // Red
+                TextOutW(hdc, 55, 96, L"[ DURDURULDU ] - Servis Kapali", 29);
+
+                SelectObject(hdc, g_hFontSub);
+                SetTextColor(hdc, RGB(148, 163, 184));
+                TextOutW(hdc, 55, 126, L"Servis su an pasif durumda. 'Servisi Baslat' tusuna basin.", 57);
             } else if (g_curState == STATE_NOT_INSTALLED) {
-                SetTextColor(hdc, RGB(251, 191, 36));
-                TextOutA(hdc, 55, 103, "●  DURUM: KURULU DEGIL ('Yeniden Kur'a basin)", 45);
+                SetTextColor(hdc, RGB(251, 191, 36)); // Amber
+                TextOutW(hdc, 55, 96, L"[ KURULU DEGIL ] - Servis Kaydi Bulunamadi", 41);
+
+                SelectObject(hdc, g_hFontSub);
+                SetTextColor(hdc, RGB(148, 163, 184));
+                TextOutW(hdc, 55, 126, L"Sisteme kaydetmek icin 'Servisi Onar / Kur' tusuna basin.", 56);
             } else {
                 SetTextColor(hdc, RGB(192, 132, 252));
-                TextOutA(hdc, 55, 103, "●  DURUM: ISLEM YAPILIYOR...", 27);
+                TextOutW(hdc, 55, 96, L"[ ISLEM YAPILIYOR... ]", 22);
+
+                SelectObject(hdc, g_hFontSub);
+                SetTextColor(hdc, RGB(148, 163, 184));
+                TextOutW(hdc, 55, 126, L"Servis durumu degistiriliyor, lutfen bekleyin...", 48);
             }
 
             // Footer
             SelectObject(hdc, g_hFontSub);
-            SetTextColor(hdc, RGB(113, 113, 122));
-            TextOutA(hdc, 35, 332, "Dust Studio  •  dust-studio.com  •  Antigravity IDE & Oyun Uyumlu", 66);
+            SetTextColor(hdc, RGB(100, 116, 139));
+            TextOutW(hdc, 35, 360, L"Dust Studio  |  dust-studio.com  |  Sifir Yan Etki ve Gecikmesiz Gecis", 68);
 
             EndPaint(hWnd, &ps);
             break;
@@ -293,7 +419,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
         case WM_TRAYICON: {
             if (lParam == WM_RBUTTONUP) {
-                ShowTrayMenu(hWnd);
+                ShowTrayMenuW(hWnd);
             } else if (lParam == WM_LBUTTONDBLCLK) {
                 ShowWindow(hWnd, SW_RESTORE);
                 SetForegroundWindow(hWnd);
@@ -306,51 +432,62 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 ShowWindow(hWnd, SW_HIDE);
                 return 0;
             }
-            return DefWindowProcA(hWnd, msg, wParam, lParam);
+            return DefWindowProcW(hWnd, msg, wParam, lParam);
         }
 
         case WM_DESTROY: {
+            Shell_NotifyIconW(NIM_DELETE, &g_nid);
             KillTimer(hWnd, 1);
-            Shell_NotifyIconA(NIM_DELETE, &g_nid);
             if (g_hBgBrush) DeleteObject(g_hBgBrush);
             if (g_hCardBrush) DeleteObject(g_hCardBrush);
             if (g_hFontTitle) DeleteObject(g_hFontTitle);
             if (g_hFontSub) DeleteObject(g_hFontSub);
             if (g_hFontStatus) DeleteObject(g_hFontStatus);
             if (g_hFontNormal) DeleteObject(g_hFontNormal);
+            if (g_hFontBtn) DeleteObject(g_hFontBtn);
             PostQuitMessage(0);
             break;
         }
 
         default:
-            return DefWindowProcA(hWnd, msg, wParam, lParam);
+            return DefWindowProcW(hWnd, msg, wParam, lParam);
     }
     return 0;
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    WNDCLASSEXA wc = {0};
-    wc.cbSize = sizeof(WNDCLASSEXA);
-    wc.style = CS_HREDRAW | CS_VREDRAW;
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
+    // Single instance check
+    HANDLE hMutex = CreateMutexW(NULL, TRUE, L"DustStudio_DustDPI_GUI_Mutex");
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        HWND existing = FindWindowW(L"DustDPIGUIClass", NULL);
+        if (existing) {
+            ShowWindow(existing, SW_RESTORE);
+            SetForegroundWindow(existing);
+        }
+        return 0;
+    }
+
+    INITCOMMONCONTROLSEX icex = { sizeof(INITCOMMONCONTROLSEX), ICC_STANDARD_CLASSES };
+    InitCommonControlsEx(&icex);
+
+    WNDCLASSEXW wc = {0};
+    wc.cbSize = sizeof(WNDCLASSEXW);
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = NULL;
-    wc.lpszClassName = "DustDPI_Class";
-    wc.hIcon = LoadIconA(hInstance, "APP_ICON");
-    if (!wc.hIcon) wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.lpszClassName = L"DustDPIGUIClass";
+    wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
+    wc.hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(1));
+    wc.hbrBackground = NULL; // Handled in WM_PAINT to prevent flicker
+    RegisterClassExW(&wc);
 
-    RegisterClassExA(&wc);
-
-    int w = 505;
-    int h = 395;
+    int w = 530;
+    int h = 430;
     int x = (GetSystemMetrics(SM_CXSCREEN) - w) / 2;
     int y = (GetSystemMetrics(SM_CYSCREEN) - h) / 2;
 
-    HWND hWnd = CreateWindowExA(
-        WS_EX_APPWINDOW,
-        "DustDPI_Class",
-        "Dust Studio — DustDPI Control Matrix",
+    HWND hWnd = CreateWindowExW(
+        0, L"DustDPIGUIClass",
+        L"DustDPI - Servis ve Ag Yoneticisi",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         x, y, w, h,
         NULL, NULL, hInstance, NULL
@@ -362,10 +499,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     UpdateWindow(hWnd);
 
     MSG msg;
-    while (GetMessageA(&msg, NULL, 0, 0)) {
+    while (GetMessageW(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
-        DispatchMessageA(&msg);
+        DispatchMessageW(&msg);
     }
 
+    if (hMutex) {
+        ReleaseMutex(hMutex);
+        CloseHandle(hMutex);
+    }
     return (int)msg.wParam;
 }

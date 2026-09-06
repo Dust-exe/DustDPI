@@ -92,12 +92,12 @@ Section "MainSection" SEC01
 
   ; 2. Yeni DustDPI servisini kur
   ${If} ${RunningX64}
-    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\dust_engine.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"'
+    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\dust_engine.exe\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
   ${Else}
-    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\dust_engine.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"'
+    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\dust_engine.exe\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
   ${EndIf}
 
-  nsExec::ExecToLog 'sc.exe description "DustDPI" "Dust Studio Selective DPI Circumvention Service"'
+  nsExec::ExecToLog 'sc.exe description "DustDPI" "Dust Studio Selective Network Optimization Service"'
   nsExec::ExecToLog 'sc.exe start "DustDPI"'
 
   ; Shortcuts

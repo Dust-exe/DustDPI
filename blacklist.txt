@@ -1,14 +1,12 @@
-# ══════════════════════════════════════════════════════════
-#              🎯 DustDPI — Hedef Alan Adları Listesi
-# ══════════════════════════════════════════════════════════
-# Yalnızca bu listedeki alan adlarına ve alt alan adlarına (subdomain)
-# DPI atlatma (desync/fragmentation) uygulanır.
-#
-# Antigravity IDE, Google, GitHub, Steam ve bankacılık gibi
-# masum/hassas uygulamalar bu listede OLMADIĞI için asla etkilenmez.
-# ══════════════════════════════════════════════════════════
+# ------------------------------------------------------------
+# DustDPI - Hedef Alan Adlari Yapilandirma Listesi
+# 
+# Bu listede belirtilen alan adlari ve alt alan adlari icin
+# gelismis paket yonetimi ve ag optimizasyonu uygulanir.
+# Diger tum sistem trafigi dogrudan ve degisiklik yapilmadan aktarilir.
+# ------------------------------------------------------------
 
-# ─── Discord Ekosistemi ───
+# Discord
 discord.com
 discord.gg
 discord.co
@@ -23,14 +21,23 @@ images-ext-1.discordapp.net
 images-ext-2.discordapp.net
 dl-media.discordapp.net
 dis.gd
+discordcdn.com
+discord.dev
+discord.new
+discord.gift
+status.discord.com
 
-# ─── Roblox Ekosistemi ───
+# Roblox
 roblox.com
 rbxcdn.com
 robloxlabs.com
 setup.rbxcdn.com
+rbxmanagers.com
+rbxtest.com
+roblox.cn
 
-# ─── Türkiye'de Engelli Diğer Popüler Platformlar ───
+# Diger Platformlar
+steamcommunity.com
 wattpad.com
 pastebin.com
 proton.me

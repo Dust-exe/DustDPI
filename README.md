@@ -1,74 +1,66 @@
-# 🛡️ DustDPI — Selective DPI Circumvention Service
+# DustDPI — Selective Network Optimization & Traffic Management Service
 
-> **Zero Collateral Damage, High-Performance Selective Windows DPI Circumvention Engine for Turkey Blocked Platforms (Discord, Roblox & More)**
+DustDPI, Windows sistemlerde belirli platform ve istemcilere (Discord, Roblox vb.) giden ag trafigini secmeli olarak optimize eden, gelistirici araclari ve kurumsal baglantilara (Antigravity IDE, bulut servisleri, bankacilik, oyun sunuculari) hicbir mudahalede bulunmadan dogrudan (pass-through) gecis saglayan yuksek performansli bir ag servisidir.
 
-[![Download Setup](https://img.shields.io/badge/Download-DustDPI__Setup.exe-brightgreen?style=for-the-badge&logo=windows)|(https://github.com/Dust-exe/DustDPI/releases/download/v1.0.0/DustDPI_Setup.exe)
+[![Download Setup](https://img.shields.io/badge/Download-DustDPI__Setup.exe-blue?style=for-the-badge&logo=windows)](https://github.com/Dust-exe/DustDPI/releases/download/v1.0.0/DustDPI_Setup.exe)
 [![Target](https://img.shields.io/badge/Target-Discord%20%7C%20Roblox-7c3aed?style=for-the-badge&logo=discord&logoColor=white)](https://dust-studio.com)
-[![Engine](https://img.shields.io/badge/Engine-WinDivert%20v1.4-a855f7?style=for-the-badge)](https://dust-studio.com)
+[![Engine](https://img.shields.io/badge/Engine-WinDivert%20v1.4-slate?style=for-the-badge)](https://dust-studio.com)
 [![Status](https://img.shields.io/badge/Antigravity%20Compatible-Verified-10b981?style=for-the-badge)](https://dust-studio.com)
-[![License](https://img.shields.io/badge/License-MIT%20%2F%20Apache-blue.svg?style=for-the-badge)](https://dust-studio.com)
 
 ---
 
-## ⚡ Neden DustDPI?
+## Ozellikler ve Calisma Mantigi
 
-Standart DPI atlatma araçları çalıştırıldığında sistemdeki **tüm giden 443 (HTTPS) ve 80 (HTTP) trafiğini körü körüne yakalar**, araya sahte (fake) TTL enjekte eder ve paketleri parçalar. 
+Genel DPI duzenleme araclari calistirildiginda, sistemdeki tum giden baglantilari (port 80 ve 443) yakalayarak paket parcalama uygular. Bu durum Antigravity IDE, Google Cloud, Claude/Anthropic API, VPN oturumlari ve oyun baglantilarinda el sikisma (TLS Handshake) bozulmalarina ve oturum kopmalarina yol acabilir.
 
-Bu durum; **Antigravity IDE**, Google Cloud, Claude/Anthropic, iş VPN'leri, Steam ve bankacılık gibi katı TLS kuralları uygulayan modern platformların el sıkışmasını (TLS Handshake) bozarak oturumların sürekli düşmesine veya bağlantı hatalarına (`ECONNRESET`) yol açar.
+DustDPI, secmeli liste (`--blacklist`) ve entegre DNS yonlendirme mimarisiyle bu sorunu cozer:
 
-**DustDPI**, `--blacklist` mimarisini devreye sokarak bu sorunu kökten çözer:
-
-* 🎯 **Yalnızca Hedef Servisler:** Sadece `blacklist.txt` içindeki engelli alan adlarına (Discord, Roblox, Wattpad vb.) desync uygular.
-* 🚀 **Sıfır Yan Etki (Pass-Through):** Antigravity IDE, Google servisleri, oyunlar ve bankalar bu listede olmadığı için paketlerine **kılını bile kıpırdatmaz**, %100 doğrudan ve orijinal hızında geçer.
-* 🖥️ **Modern Masaüstü Arayüzü (`DustDPI.exe`):** Şık dark mode arayüzü, sistem tepsisi (system tray) desteği ve tek tıkla servis başlatma/durdurma.
-* ⚙️ **Windows Servis Mimarisi:** Bilgisayar her açıldığında otomatik olarak arka planda sessizce başlar. Ekranda açık kalan CMD pencerelerine ihtiyaç duymaz.
+* **Secici Filtreleme:** Yalnizca `blacklist.txt` icerisinde tanimlanan alan adlari optimize edilir.
+* **Dogrudan Gecis (Pass-Through):** Listede yer almayan tum baglantilar (Antigravity IDE, API cagrilari, bankacilik, Steam vb.) sifir gecikmeyle dogrudan iletilir.
+* **Masaustu Uygulama Uyumlulugu:** Hem tarayicilarda hem de Discord ve Roblox masaustu istemcilerinde baglanti kopmalarini onlemek icin dahili DNS ve TLS yonetimi saglar.
+* **Masaustu Arayuzu (DustDPI.exe):** Koyu tema kontrol paneli, gercek zamanli servis durumu ve sistem tepsisi (System Tray) destegi.
+* **Arka Plan Servis Modu:** Windows baslangicinda otomatik devreye girer, acik konsol pencerelerine ihtiyac duymaz.
 
 ---
 
-## 📁 Proje Yapısı
+## Dizin Yapisi
 
 ```
 DustDPI/
-├── DustDPI_Setup.exe        # Son kullanıcı tek tıkla Windows Kurulum Sihirbazı
-├── DustDPI.exe              # Modern C++ Dark Mode Masaüstü Grafik Arayüzü (GUI)
-├── DustDPI_Manager.bat      # Renkli Konsol Yönetim Menüsü
-├── blacklist.txt            # Hedef alan adları listesi (İstediğini ekleyebilirsin)
-├── service_install.cmd      # DustDPI'ı otomatik başlayan Windows Servisi yapar
-├── service_remove.cmd       # Servisi ve WinDivert sürücülerini temizce kaldırır
-├── start_console.cmd        # Canlı test / konsol modunda başlatır
-├── start_service.cmd        # Arka plan servisini başlatır
+├── DustDPI_Setup.exe        # Son kullanici tek tikla kurulum sihirbazi
+├── DustDPI.exe              # Modern masaustu kontrol paneli (GUI)
+├── DustDPI_Manager.bat      # Komut satiri yonetim menusu
+├── blacklist.txt            # Hedef servisler ve alan adlari yapilandirma listesi
+├── service_install.cmd      # Servisi otomatik baslatilacak sekilde kurar
+├── service_remove.cmd       # Servisi ve suruculeri sistemden kaldirir
+├── start_console.cmd        # Konsol test modunda baslatir
+├── start_service.cmd        # Arka plan servisini calistirir
 ├── stop_service.cmd         # Arka plan servisini durdurur
-├── status.cmd               # Servis çalışma durumunu sorgular
-├── x86_64/                  # 64-bit sürücüler ve dust_engine motoru
-└── x86/                     # 32-bit sürücüler ve dust_engine motoru
+├── status.cmd               # Servis calisma durumunu sorgular
+├── x86_64/                  # 64-bit suruculer ve dust_engine motoru
+└── x86/                     # 32-bit suruculer ve dust_engine motoru
 ```
 
 ---
 
-## 🚀 Hızlı Kurulum & Kullanım
+## Kurulum ve Kullanim
 
-### 1. Yöntem: Yönetim Menüsü ile (Tavsiye Edilen)
-1. `DustDPI_Manager.bat` dosyasına **Sağ Tıklayın** ve **"Yönetici Olarak Çalıştır"** deyin.
-2. Açılan menüden **[1]** tuşuna basarak servisi kurun.
-3. Artık sistem arka planda hazırdır! Bilgisayarınızı yeniden başlatsanız bile servis otomatik devrede kalır.
+### 1. Yontem: Kurulum Sihirbazi ile (Tavsiye Edilen)
+1. [DustDPI_Setup.exe](https://github.com/Dust-exe/DustDPI/releases/download/v1.0.0/DustDPI_Setup.exe) dosyasini indirin ve calistirin.
+2. Kurulum tamamlandiginda servis otomatik olarak baslatilacak ve masaustune `DustDPI` kontrol paneli kisayolu eklenecektir.
 
-### 2. Yöntem: Manuel Kurulum
-* **Kurmak İçin:** `service_install.cmd` dosyasına sağ tıklayıp **"Yönetici Olarak Çalıştır"** deyin.
-* **Kaldırmak İçin:** `service_remove.cmd` dosyasını yönetici olarak çalıştırın.
-* **Test Etmek İçin:** Servis kurmadan denemek isterseniz `start_console.cmd` dosyasını yönetici olarak çalıştırabilirsiniz.
+### 2. Yontem: Yonetim Arayuzu ile
+1. `DustDPI.exe` uygulamasini acin.
+2. Servis durumunu kontrol edip tek tikla baslatabilir, durdurabilir veya hedef listesini duzenleyebilirsiniz.
+
+### 3. Yontem: Manuel Kurulum (Konsol)
+* **Kurulum:** `service_install.cmd` dosyasina sag tiklayip **"Yonetici Olarak Calistir"** deyin.
+* **Kaldirma:** `service_remove.cmd` dosyasini yonetici olarak calistirin.
+* **Canli Test:** `start_console.cmd` dosyasini yonetici olarak calistirabilirsiniz.
 
 ---
 
-## 🌐 Kritik Tavsiye: Güvenli DNS (DoH) Ayarı
+## Lisans ve Gelistirici
 
-Türkiye'deki bazı servis sağlayıcılar (İSS) Discord IP'lerini doğrudan DNS seviyesinde engellemektedir. Tüm sistemin DNS'ini rastgele tünellere zorlamak yerine, Windows veya tarayıcınızda **Şifreli DNS (DNS-over-HTTPS)** açmanız önerilir:
-
-1. **Windows 11 Ayarları:**
-   * `Ayarlar` ──► `Ağ ve İnternet` ──► `Wi-Fi veya Ethernet (Bağlantı Özellikleri)`
-   * `DNS Sunucusu Ataması` ──► `Düzenle` ──► `El ile (Manual)`
-   * IPv4 Tercih Edilen DNS: `1.1.1.1` (Cloudflare) veya `8.8.8.8` (Google)
-   * **DNS Şifrelemesi:** `Yalnızca Şifrelenmiş (HTTPS üzerinden DNS)` olarak seçin.
-2. **Alternatif (Chrome / Brave / Edge):**
-   * Tarayıcı Ayarları ──► `Gizlilik ve Güvenlik` ──► `Güvenli DNS Kullan (DoH)` ──► `Cloudflare (1.1.1.1)` seçin.
-
-Bu sayede DNS sorgularınız şifreli çözülür, DustDPI ise TCP paketlerini sansürden kurtarır. **Antigravity IDE ve tüm iş ortamınız sıfır kesintiyle çalışmaya devam eder.**
+* **Gelistirici:** [Dust Studio](https://dust-studio.com)
+* **Destek & Iletisim:** contact@dust-studio.com
