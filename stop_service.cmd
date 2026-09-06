@@ -1,12 +1,10 @@
 @ECHO OFF
-TITLE DustDPI - Servisi Durdur
+TITLE DustDPI - Stop Service
 net session >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    echo [!] HATA: Lutfen Sag Tiklayip "Yonetici Olarak Calistir" deyin!
+    echo [!] ERROR: Please right-click this script and select "Run as administrator".
     pause
     exit /B 1
 )
 sc stop "DustDPI"
-echo.
-sc query "DustDPI"
-pause
+timeout /t 2 >nul

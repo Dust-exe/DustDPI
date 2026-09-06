@@ -28,6 +28,8 @@ setup.rbxcdn.com
 rbxmanagers.com
 rbxtest.com
 roblox.cn
+reddit.com
+redd.it
 steamcommunity.com
 wattpad.com
 pastebin.com

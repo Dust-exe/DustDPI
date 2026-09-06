@@ -1,12 +1,12 @@
 @ECHO OFF
 TITLE DustDPI Control Matrix
-COLOR 0D
+COLOR 0B
 
 net session >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     COLOR 0C
-    echo [!] HATA: DustDPI Yonetici olarak calistirilmalidir!
-    echo     Lutfen bu dosyaya Sag Tiklayip "Yonetici Olarak Calistir" deyin.
+    echo [!] ERROR: DustDPI requires Administrator privileges.
+    echo     Please right-click this file and select "Run as administrator".
     echo.
     pause
     exit /B 1
@@ -16,69 +16,76 @@ PUSHD "%~dp0"
 
 :MENU
 CLS
-COLOR 0D
+COLOR 0B
 echo ====================================================================
-echo          Dust Studio - DustDPI Selective Network Service
-echo          Secici Ag Optimizasyonu  -  Sifir Yan Etki  -  Yuksek Hiz
+echo           Dust Studio - DustDPI Traffic Optimization Engine
+echo           Selective Network Freedom  -  Zero Lag  -  High Speed
 echo ====================================================================
 echo.
-echo   [1] DustDPI Servisini Kur ve Baslat (Otomatik Baslangic)
-echo   [2] Servisi Baslat
-echo   [3] Servisi Durdur
-echo   [4] Konsol / Canli Test Modunda Calistir (On Plan)
-echo   [5] Servisi ve Suruculeri Tamamen Kaldir (Uninstall)
-echo   [6] Hedef Listesini Duzenle (blacklist.txt)
-echo   [7] Servis Calisma Durumunu Kontrol Et
+echo   [1] Install and Start DustDPI Service (Auto-Start with Windows)
+echo   [2] Start DustDPI Service
+echo   [3] Stop DustDPI Service
+echo   [4] Run in Live Foreground Console Mode (Testing)
+echo   [5] Remove Service and Drivers Completely (Uninstall)
+echo   [6] Open Target Filter List in Notepad (blacklist.txt)
+echo   [7] Check Service Operational Status
+echo   [8] Run Network Diagnostic & Quick Repair
 echo.
-echo   [0] Cikis
+echo   [0] Exit
 echo.
 echo ====================================================================
-set /p SECIM="Seciminiz [0-7]: "
+set /p CHOICE="Enter Selection [0-8]: "
 
-if "%SECIM%"=="1" goto KUR
-if "%SECIM%"=="2" goto BASLAT
-if "%SECIM%"=="3" goto DURDUR
-if "%SECIM%"=="4" goto KONSOL
-if "%SECIM%"=="5" goto KALDIR
-if "%SECIM%"=="6" goto DUZENLE
-if "%SECIM%"=="7" goto DURUM
-if "%SECIM%"=="0" goto CIKIS
+if "%CHOICE%"=="1" goto INSTALL
+if "%CHOICE%"=="2" goto START
+if "%CHOICE%"=="3" goto STOP
+if "%CHOICE%"=="4" goto CONSOLE
+if "%CHOICE%"=="5" goto REMOVE
+if "%CHOICE%"=="6" goto EDIT
+if "%CHOICE%"=="7" goto STATUS
+if "%CHOICE%"=="8" goto DIAG
+if "%CHOICE%"=="0" goto EXIT
 goto MENU
 
-:KUR
+:INSTALL
 CLS
 call "%~dp0service_install.cmd"
 goto MENU
 
-:BASLAT
+:START
 CLS
 call "%~dp0start_service.cmd"
 goto MENU
 
-:DURDUR
+:STOP
 CLS
 call "%~dp0stop_service.cmd"
 goto MENU
 
-:KONSOL
+:CONSOLE
 CLS
 call "%~dp0start_console.cmd"
 goto MENU
 
-:KALDIR
+:REMOVE
 CLS
 call "%~dp0service_remove.cmd"
 goto MENU
 
-:DUZENLE
+:EDIT
 notepad "%~dp0blacklist.txt"
 goto MENU
 
-:DURUM
+:STATUS
 CLS
 call "%~dp0status.cmd"
 goto MENU
 
-:CIKIS
+:DIAG
+CLS
+call "%~dp0network_diagnostics_and_repair.cmd"
+goto MENU
+
+:EXIT
 POPD
 exit /B 0

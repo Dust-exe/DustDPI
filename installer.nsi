@@ -13,7 +13,7 @@ VIProductVersion "1.0.0.0"
 VIAddVersionKey "ProductName" "DustDPI"
 VIAddVersionKey "CompanyName" "Dust Studio"
 VIAddVersionKey "LegalCopyright" "Copyright (C) 2026 Dust Studio. All rights reserved."
-VIAddVersionKey "FileDescription" "DustDPI Selective DPI Circumvention Service Setup"
+VIAddVersionKey "FileDescription" "DustDPI High-Performance Internet Freedom & Traffic Optimization Setup"
 VIAddVersionKey "FileVersion" "1.0.0"
 VIAddVersionKey "OriginalFilename" "DustDPI_Setup.exe"
 
@@ -36,19 +36,19 @@ VIAddVersionKey "OriginalFilename" "DustDPI_Setup.exe"
 
 ; Finish Page options
 !define MUI_FINISHPAGE_RUN "$INSTDIR\DustDPI.exe"
-!define MUI_FINISHPAGE_RUN_TEXT "DustDPI'ı Calistir"
+!define MUI_FINISHPAGE_RUN_TEXT "Launch DustDPI Dashboard"
 !insertmacro MUI_PAGE_FINISH
 
 ; Uninstaller Pages
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 
-!insertmacro MUI_LANGUAGE "Turkish"
 !insertmacro MUI_LANGUAGE "English"
+!insertmacro MUI_LANGUAGE "Turkish"
 
 Section "MainSection" SEC01
-  ; 0. Calisan servis ve acik islemleri kapat (Dosya kilitlerini kaldir)
-  DetailPrint "Calisan servis ve islemler sonlandiriliyor..."
+  ; Terminate running processes and clean locks
+  DetailPrint "Terminating active services and processes..."
   nsExec::ExecToLog 'taskkill.exe /F /IM "DustDPI.exe" /T'
   nsExec::ExecToLog 'taskkill.exe /F /IM "dust_engine.exe" /T'
   nsExec::ExecToLog 'taskkill.exe /F /IM "goodbyedpi.exe" /T'
@@ -60,17 +60,18 @@ Section "MainSection" SEC01
   nsExec::ExecToLog 'sc.exe stop "WinDivert14"'
   Sleep 1500
 
-  ; Eski artik dosyalari temizle
+  ; Clean legacy binaries if any
   Delete "$INSTDIR\x86_64\goodbyedpi.exe"
   Delete "$INSTDIR\x86\goodbyedpi.exe"
 
   SetOutPath "$INSTDIR"
   SetOverwrite on
 
-  ; Copy all program files and GUI
+  ; Program files and GUI
   File "DustDPI.exe"
   File "DustDPI_Manager.bat"
   File "blacklist.txt"
+  File "network_diagnostics_and_repair.cmd"
   File "discord_fix_and_start.cmd"
   File "service_install.cmd"
   File "service_install_full_mode.cmd"
@@ -82,7 +83,7 @@ Section "MainSection" SEC01
   File "README.md"
   File "app.ico"
 
-  ; Copy binaries
+  ; Binaries
   SetOutPath "$INSTDIR\x86_64"
   File "x86_64\dust_engine.exe"
   File "x86_64\WinDivert.dll"
@@ -96,26 +97,26 @@ Section "MainSection" SEC01
 
   SetOutPath "$INSTDIR"
 
-  ; 2. Yeni DustDPI servisini kur
+  ; Register DustDPI service
   ${If} ${RunningX64}
     nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\dust_engine.exe\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
   ${Else}
     nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\dust_engine.exe\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
   ${EndIf}
 
-  nsExec::ExecToLog 'sc.exe description "DustDPI" "Dust Studio Selective Network Optimization Service"'
+  nsExec::ExecToLog 'sc.exe description "DustDPI" "Dust Studio High-Performance Internet Freedom & Selective Traffic Optimization Service"'
   nsExec::ExecToLog 'sc.exe start "DustDPI"'
 
-  ; Shortcuts
+  ; Start Menu Shortcuts
   CreateDirectory "$SMPROGRAMS\DustDPI"
   CreateShortcut "$SMPROGRAMS\DustDPI\DustDPI.lnk" "$INSTDIR\DustDPI.exe" "" "$INSTDIR\app.ico" 0
-  CreateShortcut "$SMPROGRAMS\DustDPI\Discord Onar ve Baslat.lnk" "$INSTDIR\discord_fix_and_start.cmd" "" "$INSTDIR\app.ico" 0
-  CreateShortcut "$SMPROGRAMS\DustDPI\Servisi Baslat.lnk" "$INSTDIR\start_service.cmd" "" "$INSTDIR\app.ico" 0
-  CreateShortcut "$SMPROGRAMS\DustDPI\Servisi Durdur.lnk" "$INSTDIR\stop_service.cmd" "" "$INSTDIR\app.ico" 0
-  CreateShortcut "$SMPROGRAMS\DustDPI\Hedef Listesi (Blacklist).lnk" "notepad.exe" "$INSTDIR\blacklist.txt"
-  CreateShortcut "$SMPROGRAMS\DustDPI\Kaldir (Uninstall).lnk" "$INSTDIR\uninst.exe" "" "$INSTDIR\uninst.exe" 0
+  CreateShortcut "$SMPROGRAMS\DustDPI\Target Domain Filter.lnk" "notepad.exe" "$INSTDIR\blacklist.txt"
+  CreateShortcut "$SMPROGRAMS\DustDPI\Network Diagnostics.lnk" "$INSTDIR\network_diagnostics_and_repair.cmd" "" "$INSTDIR\app.ico" 0
+  CreateShortcut "$SMPROGRAMS\DustDPI\Start Service.lnk" "$INSTDIR\start_service.cmd" "" "$INSTDIR\app.ico" 0
+  CreateShortcut "$SMPROGRAMS\DustDPI\Stop Service.lnk" "$INSTDIR\stop_service.cmd" "" "$INSTDIR\app.ico" 0
+  CreateShortcut "$SMPROGRAMS\DustDPI\Uninstall DustDPI.lnk" "$INSTDIR\uninst.exe" "" "$INSTDIR\uninst.exe" 0
 
-  ; Desktop Shortcut (Opens GUI)
+  ; Desktop Shortcut
   CreateShortcut "$DESKTOP\DustDPI.lnk" "$INSTDIR\DustDPI.exe" "" "$INSTDIR\app.ico" 0
 SectionEnd
 
@@ -135,16 +136,16 @@ SectionEnd
 
 Function un.onUninstSuccess
   HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) basariyla bilgisayarinizdan kaldirildi."
+  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) was successfully removed from your computer."
 FunctionEnd
 
 Function un.onInit
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "$(^Name) ve tum bilesenlerini kaldirmak istediginizden emin misiniz?" IDYES +2
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely uninstall $(^Name) and all of its components?" IDYES +2
   Abort
 FunctionEnd
 
 Section Uninstall
-  ; Servisi ve sürücüleri durdurup sil
+  ; Stop and delete service and drivers
   nsExec::ExecToLog 'sc.exe stop "DustDPI"'
   nsExec::ExecToLog 'sc.exe delete "DustDPI"'
   nsExec::ExecToLog 'sc.exe stop "WinDivert"'
@@ -152,12 +153,12 @@ Section Uninstall
   nsExec::ExecToLog 'sc.exe stop "WinDivert14"'
   nsExec::ExecToLog 'sc.exe delete "WinDivert14"'
 
-  ; Kısayolları sil
+  ; Delete shortcuts
   Delete "$DESKTOP\DustDPI.lnk"
   Delete "$SMPROGRAMS\DustDPI\*.*"
   RMDir "$SMPROGRAMS\DustDPI"
 
-  ; Dosyaları sil
+  ; Delete files
   Delete "$INSTDIR\x86_64\*.*"
   RMDir "$INSTDIR\x86_64"
   Delete "$INSTDIR\x86\*.*"

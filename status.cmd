@@ -1,8 +1,8 @@
 @ECHO OFF
-TITLE DustDPI - Durum Kontrolu
-echo ========================================================
-echo   DustDPI Servis Durumu:
-echo ========================================================
+TITLE DustDPI - Service Status
+echo ========================================
+echo        DustDPI Service Status
+echo ========================================
 sc query "DustDPI"
 echo.
 pause
