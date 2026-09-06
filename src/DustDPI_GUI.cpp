@@ -83,7 +83,6 @@ int CountBlacklistDomains() {
     int count = 0;
     std::string line;
     while (std::getline(file, line)) {
-        // trim whitespace
         size_t first = line.find_first_not_of(" \t\r\n");
         if (first == std::string::npos) continue;
         if (line[first] == '#') continue;
@@ -134,7 +133,6 @@ void ActionStopService() {
 void ActionFixNetwork() {
     std::wstring dir = GetAppDirectoryW();
     std::wstring cmd = dir + L"\\network_diagnostics_and_repair.cmd";
-    // Check if network_diagnostics_and_repair.cmd exists, else fallback to discord_fix_and_start.cmd
     DWORD attr = GetFileAttributesW(cmd.c_str());
     if (attr == INVALID_FILE_ATTRIBUTES) {
         cmd = dir + L"\\discord_fix_and_start.cmd";
@@ -227,7 +225,7 @@ static LRESULT CALLBACK CustomButtonProc(HWND hBtn, UINT msg, WPARAM wParam, LPA
 }
 
 // -------------------------------------------------------------
-// Target Filter Manager Window Procedure
+// Target Filter Manager Window Procedure (Purple Black Hole Theme)
 // -------------------------------------------------------------
 void PopulateFilterList(HWND hList) {
     SendMessageW(hList, LB_RESETCONTENT, 0, 0);
@@ -262,7 +260,6 @@ void SaveFilterListToFile(HWND hList) {
         }
     }
 
-    // Sort and remove duplicates
     std::sort(domains.begin(), domains.end());
     domains.erase(std::unique(domains.begin(), domains.end()), domains.end());
 
@@ -280,7 +277,6 @@ void SaveFilterListToFile(HWND hList) {
         InvalidateRect(g_hMainWnd, NULL, FALSE);
     }
 
-    // If service is running, restart it to immediately apply changes
     if (QueryDpiService() == STATE_RUNNING) {
         RunCmdAsyncW(L"sc.exe stop \"DustDPI\" & sc.exe start \"DustDPI\"", true);
     }
@@ -288,23 +284,19 @@ void SaveFilterListToFile(HWND hList) {
 
 std::wstring SanitizeDomainInput(const std::wstring& in) {
     std::wstring s = in;
-    // Trim spaces
     size_t first = s.find_first_not_of(L" \t\r\n");
     if (first == std::wstring::npos) return L"";
     size_t last = s.find_last_not_of(L" \t\r\n");
     s = s.substr(first, (last - first + 1));
 
-    // Strip http:// or https://
     const std::wstring httpPrefix = L"http://";
     const std::wstring httpsPrefix = L"https://";
     if (s.rfind(httpPrefix, 0) == 0) s = s.substr(httpPrefix.length());
     else if (s.rfind(httpsPrefix, 0) == 0) s = s.substr(httpsPrefix.length());
 
-    // Strip trailing slashes or paths
     size_t slash = s.find(L'/');
     if (slash != std::wstring::npos) s = s.substr(0, slash);
 
-    // Convert to lowercase
     std::transform(s.begin(), s.end(), s.begin(), ::towlower);
     return s;
 }
@@ -379,15 +371,15 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
         case WM_CTLCOLORLISTBOX: {
             HDC hdc = (HDC)wParam;
-            SetBkColor(hdc, RGB(19, 27, 46));
-            SetTextColor(hdc, RGB(241, 245, 249));
+            SetBkColor(hdc, RGB(22, 13, 38));
+            SetTextColor(hdc, RGB(243, 232, 255));
             return (LRESULT)g_hCardBrush;
         }
 
         case WM_CTLCOLOREDIT: {
             HDC hdc = (HDC)wParam;
-            SetBkColor(hdc, RGB(19, 27, 46));
-            SetTextColor(hdc, RGB(248, 250, 252));
+            SetBkColor(hdc, RGB(22, 13, 38));
+            SetTextColor(hdc, RGB(250, 245, 255));
             return (LRESULT)g_hCardBrush;
         }
 
@@ -395,14 +387,14 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             LPDRAWITEMSTRUCT pDIS = (LPDRAWITEMSTRUCT)lParam;
             if (pDIS->CtlType == ODT_BUTTON) {
                 bool isPressed = (pDIS->itemState & ODS_SELECTED);
-                COLORREF bgColor = RGB(30, 41, 59);
-                COLORREF borderColor = RGB(51, 65, 85);
-                COLORREF textColor = RGB(241, 245, 249);
+                COLORREF bgColor = RGB(26, 16, 44);
+                COLORREF borderColor = RGB(107, 70, 193);
+                COLORREF textColor = RGB(243, 232, 255);
 
                 if (pDIS->CtlID == IDC_FILTER_SAVE) {
-                    // Electric Cyan Primary
-                    bgColor = isPressed ? RGB(2, 132, 199) : RGB(3, 105, 161);
-                    borderColor = RGB(56, 189, 248);
+                    // Radiant Magenta / Purple
+                    bgColor = isPressed ? RGB(107, 33, 168) : RGB(147, 51, 234);
+                    borderColor = RGB(217, 70, 239);
                     textColor = RGB(255, 255, 255);
                 } else if (pDIS->CtlID == IDC_FILTER_ADD) {
                     bgColor = isPressed ? RGB(16, 75, 50) : RGB(20, 83, 45);
@@ -456,7 +448,6 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
                         break;
                     }
 
-                    // Check if already in list
                     LRESULT findIdx = SendMessageW(hList, LB_FINDSTRINGEXACT, -1, (LPARAM)domain.c_str());
                     if (findIdx != LB_ERR) {
                         MessageBoxW(hWnd, L"This domain is already in the filter list.", L"Duplicate Notice", MB_ICONINFORMATION);
@@ -512,17 +503,17 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
             // Title
             SelectObject(hdc, g_hFontTitle);
-            SetTextColor(hdc, RGB(248, 250, 252));
+            SetTextColor(hdc, RGB(250, 245, 255));
             TextOutW(hdc, 30, 16, L"Target Domain Filter", 20);
 
             // Subtitle
             SelectObject(hdc, g_hFontSub);
-            SetTextColor(hdc, RGB(56, 189, 248));
+            SetTextColor(hdc, RGB(216, 180, 254));
             TextOutW(hdc, 30, 48, L"Add or remove domains and apps for selective packet optimization.", 66);
 
             // Input label
             SelectObject(hdc, g_hFontNormal);
-            SetTextColor(hdc, RGB(148, 163, 184));
+            SetTextColor(hdc, RGB(196, 181, 253));
             TextOutW(hdc, 30, 314, L"Add New Domain / Hostname:", 26);
 
             EndPaint(hWnd, &ps);
@@ -573,7 +564,7 @@ void OpenFilterManagerWindow(HWND hParent) {
 }
 
 // -------------------------------------------------------------
-// Main Dashboard Window Procedure
+// Main Dashboard Window Procedure (Cosmic Purple Black Hole Theme)
 // -------------------------------------------------------------
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
@@ -583,8 +574,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             BOOL dark = TRUE;
             DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
 
-            // Load application icon (user cyan emblem)
-            g_hAppIcon = (HICON)LoadImageW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(1), IMAGE_ICON, 36, 36, LR_DEFAULTCOLOR);
+            // Load application icon (Purple Black Hole)
+            g_hAppIcon = (HICON)LoadImageW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(1), IMAGE_ICON, 38, 38, LR_DEFAULTCOLOR);
             if (!g_hAppIcon) {
                 g_hAppIcon = LoadIconW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(1));
             }
@@ -596,10 +587,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             g_hFontNormal = CreateFontW(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
             g_hFontBtn = CreateFontW(15, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
 
-            // Cyberpunk Dark Obsidian Palette
-            g_hBgBrush = CreateSolidBrush(RGB(11, 15, 25));       // #0b0f19
-            g_hCardBrush = CreateSolidBrush(RGB(19, 27, 46));     // #131b2e
-            g_hInputBrush = CreateSolidBrush(RGB(15, 23, 42));    // #0f172a
+            // Cosmic Purple Void Palette
+            g_hBgBrush = CreateSolidBrush(RGB(10, 6, 18));       // #0a0612 Cosmic Void Black
+            g_hCardBrush = CreateSolidBrush(RGB(22, 13, 38));     // #160d26 Deep Purple Card
+            g_hInputBrush = CreateSolidBrush(RGB(16, 9, 28));     // #10091c Dark Void Input
 
             struct BtnDef {
                 int id;
@@ -643,23 +634,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 
                 COLORREF bgColor;
                 COLORREF borderColor;
-                COLORREF textColor = RGB(241, 245, 249);
+                COLORREF textColor = RGB(243, 232, 255);
 
                 if (pDIS->CtlID == IDC_BTN_START) {
-                    // Electric Cyan / Blue Primary
+                    // Royal Violet / Neon Magenta Primary
                     if (isPressed) {
-                        bgColor = RGB(2, 132, 199);
-                        borderColor = RGB(56, 189, 248);
+                        bgColor = RGB(107, 33, 168);   // #6b21a8
+                        borderColor = RGB(217, 70, 239);
                     } else if (isHover) {
-                        bgColor = RGB(3, 105, 161);
-                        borderColor = RGB(56, 189, 248);
+                        bgColor = RGB(147, 51, 234);   // #9333ea
+                        borderColor = RGB(232, 121, 249);
                     } else {
-                        bgColor = RGB(2, 132, 199);
-                        borderColor = RGB(14, 165, 233);
+                        bgColor = RGB(126, 34, 206);   // #7e22ce
+                        borderColor = RGB(192, 38, 211);
                     }
                     textColor = RGB(255, 255, 255);
                 } else if (pDIS->CtlID == IDC_BTN_STOP) {
-                    // Subtle Crimson / Rose
+                    // Burgundy / Crimson
                     if (isPressed) {
                         bgColor = RGB(69, 26, 26);
                         borderColor = RGB(185, 28, 28);
@@ -672,30 +663,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     }
                     textColor = RGB(254, 202, 202);
                 } else if (pDIS->CtlID == IDC_BTN_FILTER) {
-                    // Accent Cyber Cyan outline
+                    // Glowing Purple Border
                     if (isPressed) {
-                        bgColor = RGB(15, 23, 42);
-                        borderColor = RGB(56, 189, 248);
+                        bgColor = RGB(16, 9, 28);
+                        borderColor = RGB(217, 70, 239);
                     } else if (isHover) {
-                        bgColor = RGB(22, 38, 65);
-                        borderColor = RGB(0, 229, 255);
+                        bgColor = RGB(38, 19, 65);
+                        borderColor = RGB(232, 121, 249);
                     } else {
-                        bgColor = RGB(19, 27, 46);
-                        borderColor = RGB(56, 189, 248);
+                        bgColor = RGB(26, 16, 44);
+                        borderColor = RGB(168, 85, 247);
                     }
-                    textColor = RGB(56, 189, 248);
+                    textColor = RGB(232, 121, 249);
                 } else {
-                    // Neutral Slate
+                    // Deep Void Slate Purple
                     if (isPressed) {
-                        bgColor = RGB(15, 23, 42);
-                        borderColor = RGB(71, 85, 105);
+                        bgColor = RGB(16, 9, 28);
+                        borderColor = RGB(126, 34, 206);
                     } else if (isHover) {
-                        bgColor = RGB(51, 65, 85);
-                        borderColor = RGB(100, 116, 139);
+                        bgColor = RGB(38, 19, 65);
+                        borderColor = RGB(168, 85, 247);
                     } else {
-                        bgColor = RGB(30, 41, 59);
-                        borderColor = RGB(51, 65, 85);
+                        bgColor = RGB(26, 16, 44);
+                        borderColor = RGB(107, 70, 193);
                     }
+                    textColor = RGB(226, 215, 255);
                 }
 
                 HBRUSH btnBrush = CreateSolidBrush(bgColor);
@@ -766,29 +758,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             FillRect(hdc, &clientRect, g_hBgBrush);
             SetBkMode(hdc, TRANSPARENT);
 
-            // Draw Logo Emblem Icon (User Cyan Diamond & Wings)
+            // Draw Purple Black Hole Emblem (38x38)
             if (g_hAppIcon) {
-                DrawIconEx(hdc, 35, 20, g_hAppIcon, 38, 38, 0, NULL, DI_NORMAL);
+                DrawIconEx(hdc, 35, 18, g_hAppIcon, 40, 40, 0, NULL, DI_NORMAL);
             }
 
             // Title
             SelectObject(hdc, g_hFontTitle);
-            SetTextColor(hdc, RGB(248, 250, 252));
-            TextOutW(hdc, 84, 16, L"DustDPI", 7);
+            SetTextColor(hdc, RGB(250, 245, 255));
+            TextOutW(hdc, 86, 16, L"DustDPI", 7);
 
-            // Subtitle / Tagline
+            // Subtitle / Tagline in Radiant Lilac
             SelectObject(hdc, g_hFontSub);
-            SetTextColor(hdc, RGB(56, 189, 248));
+            SetTextColor(hdc, RGB(216, 180, 254));
             TextOutW(hdc, 195, 26, L"Next-Gen Internet Freedom & Traffic Engine", 43);
 
-            // Description
+            // Description in Soft Lavender
             SelectObject(hdc, g_hFontNormal);
-            SetTextColor(hdc, RGB(148, 163, 184));
+            SetTextColor(hdc, RGB(196, 181, 253));
             TextOutW(hdc, 35, 68, L"Driver-level network routing for unrestricted, ultra-low latency browsing and connectivity.", 91);
 
             // Status Card Panel (35, 96, 525, 178)
             RECT cardRect = { 35, 96, 525, 178 };
-            HPEN cardPen = CreatePen(PS_SOLID, 1, RGB(30, 41, 59));
+            HPEN cardPen = CreatePen(PS_SOLID, 1, RGB(147, 51, 234)); // Neon Purple Border
             HGDIOBJ oldB = SelectObject(hdc, g_hCardBrush);
             HGDIOBJ oldP = SelectObject(hdc, cardPen);
             RoundRect(hdc, cardRect.left, cardRect.top, cardRect.right, cardRect.bottom, 10, 10);
@@ -802,7 +794,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             wsprintfW(domainStatusBuf, L"Active Filter: %d monitored domains  |  Port 1253 Local DNS Redirection Active", g_activeDomainCount);
 
             if (g_curState == STATE_RUNNING) {
-                SetTextColor(hdc, RGB(56, 189, 248));
+                SetTextColor(hdc, RGB(232, 121, 249)); // Radiant Pink/Purple
                 if (g_fullMode) {
                     TextOutW(hdc, 55, 110, L"[ ACTIVE ]  Global Traffic Optimization Enabled", 47);
                 } else {
@@ -810,34 +802,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 }
 
                 SelectObject(hdc, g_hFontSub);
-                SetTextColor(hdc, RGB(148, 163, 184));
+                SetTextColor(hdc, RGB(216, 180, 254));
                 TextOutW(hdc, 55, 140, domainStatusBuf, (int)wcslen(domainStatusBuf));
             } else if (g_curState == STATE_STOPPED) {
                 SetTextColor(hdc, RGB(248, 113, 113));
                 TextOutW(hdc, 55, 110, L"[ INACTIVE ]  Traffic Optimization Engine Paused", 48);
 
                 SelectObject(hdc, g_hFontSub);
-                SetTextColor(hdc, RGB(148, 163, 184));
+                SetTextColor(hdc, RGB(196, 181, 253));
                 TextOutW(hdc, 55, 140, L"Traffic flows directly without packet optimization. Click 'Start Service' to enable.", 85);
             } else if (g_curState == STATE_NOT_INSTALLED) {
                 SetTextColor(hdc, RGB(251, 191, 36));
                 TextOutW(hdc, 55, 110, L"[ NOT REGISTERED ]  DustDPI Service Not Found", 45);
 
                 SelectObject(hdc, g_hFontSub);
-                SetTextColor(hdc, RGB(148, 163, 184));
+                SetTextColor(hdc, RGB(196, 181, 253));
                 TextOutW(hdc, 55, 140, L"Click 'Reinstall / Repair Service' to register the driver and configure autostart.", 82);
             } else {
                 SetTextColor(hdc, RGB(192, 132, 252));
                 TextOutW(hdc, 55, 110, L"[ PROCESSING... ]  Updating Service State", 41);
 
                 SelectObject(hdc, g_hFontSub);
-                SetTextColor(hdc, RGB(148, 163, 184));
+                SetTextColor(hdc, RGB(196, 181, 253));
                 TextOutW(hdc, 55, 140, L"Please wait while the Windows service state transitions...", 58);
             }
 
             // Footer
             SelectObject(hdc, g_hFontSub);
-            SetTextColor(hdc, RGB(100, 116, 139));
+            SetTextColor(hdc, RGB(147, 125, 178));
             TextOutW(hdc, 35, 364, L"Dust Studio  |  Autonomous Traffic Routing Engine  |  Zero Latency & Collateral Freedom", 87);
 
             EndPaint(hWnd, &ps);
