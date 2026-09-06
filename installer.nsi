@@ -47,6 +47,19 @@ VIAddVersionKey "OriginalFilename" "DustDPI_Setup.exe"
 !insertmacro MUI_LANGUAGE "English"
 
 Section "MainSection" SEC01
+  ; 0. Calisan servis ve acik islemleri kapat (Dosya kilitlerini kaldir)
+  DetailPrint "Calisan servis ve islemler sonlandiriliyor..."
+  nsExec::ExecToLog 'taskkill.exe /F /IM "DustDPI.exe" /T'
+  nsExec::ExecToLog 'taskkill.exe /F /IM "dust_engine.exe" /T'
+  nsExec::ExecToLog 'taskkill.exe /F /IM "goodbyedpi.exe" /T'
+  nsExec::ExecToLog 'sc.exe stop "DustDPI"'
+  nsExec::ExecToLog 'sc.exe delete "DustDPI"'
+  nsExec::ExecToLog 'sc.exe stop "GoodbyeDPI"'
+  nsExec::ExecToLog 'sc.exe delete "GoodbyeDPI"'
+  nsExec::ExecToLog 'sc.exe stop "WinDivert"'
+  nsExec::ExecToLog 'sc.exe stop "WinDivert14"'
+  Sleep 1500
+
   SetOutPath "$INSTDIR"
   SetOverwrite on
 
@@ -76,10 +89,6 @@ Section "MainSection" SEC01
   File "x86\WinDivert64.sys"
 
   SetOutPath "$INSTDIR"
-
-  ; 1. Eski servisleri temizle
-  nsExec::ExecToLog 'sc.exe stop "DustDPI"'
-  nsExec::ExecToLog 'sc.exe delete "DustDPI"'
 
   ; 2. Yeni DustDPI servisini kur
   ${If} ${RunningX64}
