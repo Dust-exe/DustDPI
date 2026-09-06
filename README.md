@@ -124,6 +124,15 @@ makensis installer.nsi
 
 ---
 
+## Legal Notice & Disclaimer
+
+- **Educational & Diagnostic Purpose**: DustDPI is published strictly as a network research, traffic diagnostic, and latency optimization utility.
+- **Compliance with Laws**: Users are solely responsible for ensuring compliance with their local, national, and international laws, telecommunications regulations, and service provider terms. Dust Studio assumes no liability for user configuration or misuse.
+- **Trademarks**: All product names, logos, and brands mentioned (such as Discord, Roblox, Steam, etc.) are property of their respective owners. Their mention is strictly descriptive and does not imply affiliation or endorsement.
+- Detailed terms: See [DISCLAIMER.md](DISCLAIMER.md) and [LICENSE](LICENSE).
+
+---
+
 ## License
 
 This project is distributed under the Apache License 2.0. WinDivert kernel components are licensed under the GNU Lesser General Public License (LGPL) v3.

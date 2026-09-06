@@ -31,6 +31,7 @@ VIAddVersionKey "OriginalFilename" "DustDPI_Setup.exe"
 
 ; Pages
 !insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "LICENSE"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 
@@ -81,6 +82,8 @@ Section "MainSection" SEC01
   File "stop_service.cmd"
   File "status.cmd"
   File "README.md"
+  File "LICENSE"
+  File "DISCLAIMER.md"
   File "app.ico"
 
   ; Binaries

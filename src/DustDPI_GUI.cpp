@@ -20,7 +20,8 @@
 #define ID_TRAY_STOP    2003
 #define ID_TRAY_FIX     2004
 #define ID_TRAY_FILTER  2005
-#define ID_TRAY_EXIT    2006
+#define ID_TRAY_ABOUT   2006
+#define ID_TRAY_EXIT    2007
 
 #define IDC_BTN_START      101
 #define IDC_BTN_STOP       102
@@ -171,6 +172,19 @@ void ActionOpenNotepad() {
     ShellExecuteW(NULL, L"open", L"notepad.exe", bl.c_str(), NULL, SW_SHOW);
 }
 
+void ShowLegalNotice(HWND hWnd) {
+    MessageBoxW(hWnd,
+        L"DustDPI — Selective Internet Freedom & Traffic Optimization Engine\n"
+        L"Version 1.0.0 | Copyright (C) 2026 Dust Studio. All rights reserved.\n\n"
+        L"LEGAL DISCLAIMER & TERMS OF USE:\n\n"
+        L"1. Purpose: DustDPI is published strictly as a network research, traffic diagnostic, and latency optimization utility.\n\n"
+        L"2. User Responsibility: Users are solely responsible for ensuring compliance with all local telecommunications regulations, criminal statutes, and network provider terms of service. Dust Studio assumes no liability for user configuration or misuse.\n\n"
+        L"3. Trademarks: All third-party names, service marks, and trademarks (including Discord, Roblox, Steam, Google, etc.) belong to their respective owners. Mention is strictly descriptive and does not imply affiliation, sponsorship, or endorsement.\n\n"
+        L"4. License: Distributed 'AS IS' without warranties under Apache License 2.0. Packet filtering powered by WinDivert (LGPL v3).",
+        L"DustDPI — Legal Notice & Terms",
+        MB_ICONINFORMATION | MB_OK);
+}
+
 void SetupTrayW(HWND hWnd) {
     g_nid.cbSize = sizeof(NOTIFYICONDATAW);
     g_nid.hWnd = hWnd;
@@ -192,6 +206,7 @@ void ShowTrayMenuW(HWND hWnd) {
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_STOP, L"Stop Service");
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_FIX, L"Run Network Diagnostic & Fix");
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_FILTER, L"Manage Target Filter...");
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_ABOUT, L"Legal Notice & Disclaimer...");
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT, L"Exit");
 
@@ -741,11 +756,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 case ID_TRAY_STOP: ActionStopService(); break;
                 case ID_TRAY_FIX: ActionFixNetwork(); break;
                 case ID_TRAY_FILTER: OpenFilterManagerWindow(hWnd); break;
+                case ID_TRAY_ABOUT: ShowLegalNotice(hWnd); break;
                 case ID_TRAY_EXIT:
                     DestroyWindow(hWnd);
                     break;
             }
             SetTimer(hWnd, 2, 400, NULL);
+            break;
+        }
+
+        case WM_LBUTTONUP: {
+            int x = LOWORD(lParam);
+            int y = HIWORD(lParam);
+            if (y >= 355 && y <= 385 && x >= 30 && x <= 530) {
+                ShowLegalNotice(hWnd);
+            }
             break;
         }
 
@@ -829,8 +854,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
             // Footer
             SelectObject(hdc, g_hFontSub);
-            SetTextColor(hdc, RGB(147, 125, 178));
-            TextOutW(hdc, 35, 364, L"Dust Studio  |  Autonomous Traffic Routing Engine  |  Zero Latency & Collateral Freedom", 87);
+            SetTextColor(hdc, RGB(168, 140, 206));
+            TextOutW(hdc, 35, 364, L"Dust Studio  |  Autonomous Traffic Routing Engine  |  [ Legal Notice & License ]", 80);
 
             EndPaint(hWnd, &ps);
             break;
