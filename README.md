@@ -6,6 +6,16 @@ DustDPI is a lightweight, driver-level network optimization service engineered t
 
 ---
 
+## Disclaimer / Sorumluluk Reddi
+
+This software is developed strictly for educational, research, and network analysis purposes. 
+The developers assume no liability and are not responsible for any misuse, damage, 
+or violation of local laws, telecommunication regulations, or ISP terms of service 
+caused by using this tool. Users are solely responsible for complying with all applicable laws 
+in their jurisdiction.
+
+---
+
 ## Key Features
 
 - **Selective Packet Routing**: Only traffic destined for hostnames listed in your target filter is processed. General browsing, high-speed gaming, streaming, and local network traffic bypass the engine entirely at native line speed.
@@ -133,6 +143,7 @@ makensis installer.nsi
 
 ---
 
-## License
-
-This project is distributed under the Apache License 2.0. WinDivert kernel components are licensed under the GNU Lesser General Public License (LGPL) v3.
+## License & Third-Party Attributions
+ 
+- **DustDPI**: Distributed under the [Apache License 2.0](LICENSE). Copyright (C) 2026 Dust Studio.
+- **WinDivert**: Kernel packet capturing driver components are licensed under the [GNU Lesser General Public License (LGPL) v3](https://www.gnu.org/licenses/lgpl-3.0.html). For complete licensing texts and attributions, see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

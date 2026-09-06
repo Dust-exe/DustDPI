@@ -84,6 +84,7 @@ Section "MainSection" SEC01
   File "README.md"
   File "LICENSE"
   File "DISCLAIMER.md"
+  File "THIRD_PARTY_LICENSES.md"
   File "app.ico"
 
   ; Binaries
@@ -91,12 +92,14 @@ Section "MainSection" SEC01
   File "x86_64\dust_engine.exe"
   File "x86_64\WinDivert.dll"
   File "x86_64\WinDivert64.sys"
+  File "x86_64\LICENSE_WINDIVERT.txt"
 
   SetOutPath "$INSTDIR\x86"
   File "x86\dust_engine.exe"
   File "x86\WinDivert.dll"
   File "x86\WinDivert32.sys"
   File "x86\WinDivert64.sys"
+  File "x86\LICENSE_WINDIVERT.txt"
 
   SetOutPath "$INSTDIR"
 
