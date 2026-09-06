@@ -73,7 +73,6 @@ Section "MainSection" SEC01
   File "DustDPI_Manager.bat"
   File "blacklist.txt"
   File "network_diagnostics_and_repair.cmd"
-  File "discord_fix_and_start.cmd"
   File "service_install.cmd"
   File "service_install_full_mode.cmd"
   File "service_remove.cmd"

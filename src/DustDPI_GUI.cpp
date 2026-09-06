@@ -134,10 +134,6 @@ void ActionStopService() {
 void ActionFixNetwork() {
     std::wstring dir = GetAppDirectoryW();
     std::wstring cmd = dir + L"\\network_diagnostics_and_repair.cmd";
-    DWORD attr = GetFileAttributesW(cmd.c_str());
-    if (attr == INVALID_FILE_ATTRIBUTES) {
-        cmd = dir + L"\\discord_fix_and_start.cmd";
-    }
     ShellExecuteW(NULL, L"runas", cmd.c_str(), NULL, dir.c_str(), SW_SHOWNORMAL);
 }
 
@@ -179,7 +175,7 @@ void ShowLegalNotice(HWND hWnd) {
         L"LEGAL DISCLAIMER & TERMS OF USE:\n\n"
         L"1. Purpose: DustDPI is published strictly as a network research, traffic diagnostic, and latency optimization utility.\n\n"
         L"2. User Responsibility: Users are solely responsible for ensuring compliance with all local telecommunications regulations, criminal statutes, and network provider terms of service. Dust Studio assumes no liability for user configuration or misuse.\n\n"
-        L"3. Trademarks: All third-party names, service marks, and trademarks (including Discord, Roblox, Steam, Google, etc.) belong to their respective owners. Mention is strictly descriptive and does not imply affiliation, sponsorship, or endorsement.\n\n"
+        L"3. Trademarks: All product names, logos, and brands are property of their respective owners. All company, product, and service names used in this document and software are for identification purposes only.\n\n"
         L"4. License: Distributed 'AS IS' without warranties under Apache License 2.0. Packet filtering powered by WinDivert (LGPL v3).",
         L"DustDPI — Legal Notice & Terms",
         MB_ICONINFORMATION | MB_OK);

@@ -15,14 +15,16 @@ This software is published globally without geographical restriction. By install
 - Neither the developers, authors, nor Dust Studio endorse, encourage, or facilitate unauthorized network access, circumvention of legal sanctions, intellectual property infringement, or unlawful telecommunications activities.
 - You assume full legal accountability for all data transmitted through or modified by this software on your system.
 
-### 3. Disclaimer of Warranty (AS-IS)
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, OR DUST STUDIO BE LIABLE FOR ANY CLAIM, DAMAGES, SYSTEM CRASHES, HARDWARE MALFUNCTION, DATA LOSS, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+### 3. No Warranty & Kernel-Level Limitation of Liability
+**No Warranty / Limitation of Liability:** DustDPI modifies raw network packet flags and TCP/IP handshakes at the kernel level. The software is provided "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, title, and non-infringement. 
+
+Dust Studio, developers, and contributors shall not be held liable for any network downtime, system instability, hardware malfunction, packet loss, or regulatory penalties incurred by the user. End users bear full responsibility for all actions performed using this software.
 
 ### 4. Third-Party Trademarks & Non-Affiliation
-All product names, trademarks, logos, and registered trademarks mentioned within this repository, documentation, or default filter configurations (including but not limited to *Discord*, *Roblox*, *Steam*, *Google*, *Reddit*, *Cloudflare*) are property of their respective owners. All company, product, and service names used in this project are for identification and descriptive purposes only. Mention of these names does not imply any affiliation, sponsorship, endorsement, or commercial relationship with Dust Studio.
+All product names, logos, and brands are property of their respective owners. All company, product, and service names used in this document and software are for identification purposes only. Mention of these names does not imply any affiliation, sponsorship, endorsement, or commercial relationship with Dust Studio.
 
 ### 5. Open Source & Third-Party Components
-- **WinDivert**: This software utilizes the WinDivert packet capture library and kernel filtering driver. WinDivert is copyrighted by basil00 and licensed under the GNU Lesser General Public License (LGPL) version 3. The inclusion of WinDivert binaries complies with LGPL distribution terms and remains independently replaceable by the user.
+- **WinDivert**: WinDivert kernel driver and user-mode library are licensed under GNU LGPLv3. Source code and license details can be obtained from the [WinDivert Official Repository](https://github.com/basil00/WinDivert). WinDivert dynamic libraries (`WinDivert.dll`) and drivers (`WinDivert*.sys`) remain separate, modular binaries that can be independently inspected and replaced under the GNU LGPL v3.
 
 ---
 

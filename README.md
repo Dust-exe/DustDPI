@@ -138,7 +138,8 @@ makensis installer.nsi
 
 - **Educational & Diagnostic Purpose**: DustDPI is published strictly as a network research, traffic diagnostic, and latency optimization utility.
 - **Compliance with Laws**: Users are solely responsible for ensuring compliance with their local, national, and international laws, telecommunications regulations, and service provider terms. Dust Studio assumes no liability for user configuration or misuse.
-- **Trademarks**: All product names, logos, and brands mentioned (such as Discord, Roblox, Steam, etc.) are property of their respective owners. Their mention is strictly descriptive and does not imply affiliation or endorsement.
+- **Trademarks**: All product names, logos, and brands are property of their respective owners. All company, product, and service names used in this document and software are for identification purposes only.
+- **Kernel-Level Liability**: DustDPI modifies raw network packet flags and TCP/IP handshakes at the driver level. Dust Studio shall not be held liable for any network downtime, system instability, packet loss, or regulatory penalties incurred by the user. End users bear full responsibility for actions performed using this software.
 - Detailed terms: See [DISCLAIMER.md](DISCLAIMER.md) and [LICENSE](LICENSE).
 
 ---
@@ -146,4 +147,4 @@ makensis installer.nsi
 ## License & Third-Party Attributions
  
 - **DustDPI**: Distributed under the [Apache License 2.0](LICENSE). Copyright (C) 2026 Dust Studio.
-- **WinDivert**: Kernel packet capturing driver components are licensed under the [GNU Lesser General Public License (LGPL) v3](https://www.gnu.org/licenses/lgpl-3.0.html). For complete licensing texts and attributions, see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+- **WinDivert**: WinDivert kernel driver and user-mode library are licensed under GNU LGPLv3. Source code and license details can be obtained from the [WinDivert Official Repository](https://github.com/basil00/WinDivert). For complete licensing texts and attributions, see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
