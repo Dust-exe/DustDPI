@@ -1,19 +1,15 @@
-# ------------------------------------------------------------
-# DustDPI - Hedef Alan Adlari Yapilandirma Listesi
-# 
-# Bu listede belirtilen alan adlari ve alt alan adlari icin
-# gelismis paket yonetimi ve ag optimizasyonu uygulanir.
-# Diger tum sistem trafigi dogrudan ve degisiklik yapilmadan aktarilir.
-# ------------------------------------------------------------
-
-# Discord
 discord.com
 discord.gg
 discord.co
 discord.media
+discord.dev
+discord.new
+discord.gift
 discordapp.com
 discordapp.net
+discordcdn.com
 discordstatus.com
+status.discord.com
 gateway.discord.gg
 cdn.discordapp.com
 media.discordapp.net
@@ -21,13 +17,10 @@ images-ext-1.discordapp.net
 images-ext-2.discordapp.net
 dl-media.discordapp.net
 dis.gd
-discordcdn.com
-discord.dev
-discord.new
-discord.gift
-status.discord.com
-
-# Roblox
+updates.discord.com
+latency.discord.media
+router.discord.media
+stun.discord.media
 roblox.com
 rbxcdn.com
 robloxlabs.com
@@ -35,11 +28,10 @@ setup.rbxcdn.com
 rbxmanagers.com
 rbxtest.com
 roblox.cn
-
-# Diger Platformlar
 steamcommunity.com
 wattpad.com
 pastebin.com
 proton.me
 protonmail.com
 protonvpn.com
+cloudflare.com

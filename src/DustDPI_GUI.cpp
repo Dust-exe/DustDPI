@@ -16,14 +16,15 @@
 #define ID_TRAY_SHOW    2001
 #define ID_TRAY_START   2002
 #define ID_TRAY_STOP    2003
-#define ID_TRAY_EDIT    2004
-#define ID_TRAY_EXIT    2005
+#define ID_TRAY_FIX     2004
+#define ID_TRAY_EDIT    2005
+#define ID_TRAY_EXIT    2006
 
 #define IDC_BTN_START     101
 #define IDC_BTN_STOP      102
-#define IDC_BTN_RESTART   103
+#define IDC_BTN_FIXDISCORD 103
 #define IDC_BTN_BLACKLIST 104
-#define IDC_BTN_CONSOLE   105
+#define IDC_BTN_TOGGLEMODE 105
 #define IDC_BTN_INSTALL   106
 
 enum ServiceState {
@@ -47,6 +48,7 @@ static HFONT g_hFontBtn = NULL;
 static ServiceState g_curState = STATE_UNKNOWN;
 static wchar_t g_appDir[MAX_PATH] = {0};
 static int g_hoverBtnId = 0;
+static bool g_fullMode = false;
 
 std::wstring GetAppDirectoryW() {
     if (g_appDir[0] == L'\0') {
@@ -96,32 +98,41 @@ void ActionStopService() {
     RunCmdAsyncW(L"sc.exe stop \"DustDPI\"", true);
 }
 
-void ActionRestartService() {
-    RunCmdAsyncW(L"sc.exe stop \"DustDPI\" & timeout /t 1 & sc.exe start \"DustDPI\"", true);
+void ActionFixDiscord() {
+    std::wstring dir = GetAppDirectoryW();
+    std::wstring cmd = dir + L"\\discord_fix_and_start.cmd";
+    ShellExecuteW(NULL, L"runas", cmd.c_str(), NULL, dir.c_str(), SW_SHOWNORMAL);
 }
 
-void ActionInstallService() {
+void ActionInstallService(bool fullMode = false) {
     std::wstring dir = GetAppDirectoryW();
     std::wstring exe64 = dir + L"\\x86_64\\dust_engine.exe";
     std::wstring bl = dir + L"\\blacklist.txt";
     std::wstring cmd = L"sc.exe stop \"DustDPI\" & sc.exe delete \"DustDPI\" & ";
-    cmd += L"sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + L"\\\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \\\"" + bl + L"\\\"\" start= auto DisplayName= \"DustDPI Service\" & ";
+    if (fullMode) {
+        cmd += L"sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + L"\\\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253\" start= auto DisplayName= \"DustDPI Service\" & ";
+    } else {
+        cmd += L"sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + L"\\\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \\\"" + bl + L"\\\"\" start= auto DisplayName= \"DustDPI Service\" & ";
+    }
     cmd += L"sc.exe description \"DustDPI\" \"Dust Studio Selective Network Optimization Service\" & ";
     cmd += L"sc.exe start \"DustDPI\"";
     RunCmdAsyncW(cmd, true);
 }
 
+void ActionToggleMode() {
+    g_fullMode = !g_fullMode;
+    ActionInstallService(g_fullMode);
+    HWND hBtn = GetDlgItem(g_hMainWnd, IDC_BTN_TOGGLEMODE);
+    if (hBtn) {
+        SetWindowTextW(hBtn, g_fullMode ? L"Mod: Tam Kapsam (Discord)" : L"Mod: Secici (Hedef Liste)");
+        InvalidateRect(hBtn, NULL, FALSE);
+    }
+    InvalidateRect(g_hMainWnd, NULL, FALSE);
+}
+
 void ActionEditBlacklist() {
     std::wstring bl = GetAppDirectoryW() + L"\\blacklist.txt";
     ShellExecuteW(NULL, L"open", L"notepad.exe", bl.c_str(), NULL, SW_SHOW);
-}
-
-void ActionRunConsole() {
-    std::wstring dir = GetAppDirectoryW();
-    std::wstring exe64 = dir + L"\\x86_64\\dust_engine.exe";
-    std::wstring bl = dir + L"\\blacklist.txt";
-    std::wstring args = L"/k title DustDPI Console Test & \"" + exe64 + L"\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"" + bl + L"\"";
-    ShellExecuteW(NULL, L"runas", L"cmd.exe", args.c_str(), dir.c_str(), SW_SHOW);
 }
 
 void SetupTrayW(HWND hWnd) {
@@ -146,6 +157,7 @@ void ShowTrayMenuW(HWND hWnd) {
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_START, L"Servisi Baslat");
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_STOP, L"Servisi Durdur");
+    AppendMenuW(hMenu, MF_STRING, ID_TRAY_FIX, L"Discord'u Onar ve Baslat");
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_EDIT, L"Hedef Listesini Duzenle (blacklist.txt)");
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT, L"Cikis");
@@ -155,7 +167,6 @@ void ShowTrayMenuW(HWND hWnd) {
     DestroyMenu(hMenu);
 }
 
-// Custom button window procedure to handle hover states
 static WNDPROC g_oldBtnProc = NULL;
 static LRESULT CALLBACK CustomButtonProc(HWND hBtn, UINT msg, WPARAM wParam, LPARAM lParam) {
     int id = GetWindowLong(hBtn, GWL_ID);
@@ -185,22 +196,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_CREATE: {
             g_hMainWnd = hWnd;
             
-            // Enable Windows 10/11 Dark Titlebar
             BOOL dark = TRUE;
             DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
 
-            // Fonts: Segoe UI ClearType
             g_hFontTitle = CreateFontW(26, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
             g_hFontSub = CreateFontW(13, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
             g_hFontStatus = CreateFontW(17, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
             g_hFontNormal = CreateFontW(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
             g_hFontBtn = CreateFontW(15, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L"Segoe UI");
 
-            // Brushes (Modern dark palette: #0b0f19 and card #161f30)
             g_hBgBrush = CreateSolidBrush(RGB(11, 15, 25));
             g_hCardBrush = CreateSolidBrush(RGB(22, 31, 48));
 
-            // Grid buttons (BS_OWNERDRAW for smooth modern styling)
             struct BtnDef {
                 int id;
                 const wchar_t* text;
@@ -208,12 +215,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             };
 
             BtnDef buttons[] = {
-                { IDC_BTN_START,     L"Servisi Baslat",           35, 185, 215, 42 },
-                { IDC_BTN_STOP,      L"Servisi Durdur",          265, 185, 215, 42 },
-                { IDC_BTN_RESTART,   L"Yeniden Baslat",           35, 240, 215, 42 },
-                { IDC_BTN_BLACKLIST, L"Hedef Listesi (Blacklist)",265, 240, 215, 42 },
-                { IDC_BTN_CONSOLE,   L"Canli Test Modu",          35, 295, 215, 42 },
-                { IDC_BTN_INSTALL,   L"Servisi Onar / Kur",      265, 295, 215, 42 }
+                { IDC_BTN_START,      L"Servisi Baslat",            35, 185, 215, 42 },
+                { IDC_BTN_STOP,       L"Servisi Durdur",           265, 185, 215, 42 },
+                { IDC_BTN_FIXDISCORD, L"Discord'u Onar ve Ac",      35, 240, 215, 42 },
+                { IDC_BTN_BLACKLIST,  L"Hedef Listesi (Blacklist)", 265, 240, 215, 42 },
+                { IDC_BTN_TOGGLEMODE, L"Mod: Secici (Hedef Liste)", 35, 295, 215, 42 },
+                { IDC_BTN_INSTALL,    L"Servisi Sifirla / Kur",    265, 295, 215, 42 }
             };
 
             for (const auto& b : buttons) {
@@ -242,10 +249,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 
                 COLORREF bgColor;
                 COLORREF borderColor;
-                COLORREF textColor = RGB(241, 245, 249); // White text
+                COLORREF textColor = RGB(241, 245, 249);
 
                 if (pDIS->CtlID == IDC_BTN_START) {
-                    // Primary button: Vibrant Blue
+                    // Primary Blue
                     if (isPressed) {
                         bgColor = RGB(29, 78, 216);
                         borderColor = RGB(37, 99, 235);
@@ -257,7 +264,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         borderColor = RGB(59, 130, 246);
                     }
                 } else if (pDIS->CtlID == IDC_BTN_STOP) {
-                    // Secondary Danger: Dark Wine/Red
+                    // Danger Red
                     if (isPressed) {
                         bgColor = RGB(69, 26, 26);
                         borderColor = RGB(185, 28, 28);
@@ -268,8 +275,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         bgColor = RGB(45, 20, 20);
                         borderColor = RGB(127, 29, 29);
                     }
+                } else if (pDIS->CtlID == IDC_BTN_FIXDISCORD) {
+                    // Accent Purple for Discord Fix
+                    if (isPressed) {
+                        bgColor = RGB(88, 28, 135);
+                        borderColor = RGB(126, 34, 206);
+                    } else if (isHover) {
+                        bgColor = RGB(126, 34, 206);
+                        borderColor = RGB(168, 85, 247);
+                    } else {
+                        bgColor = RGB(109, 40, 217);
+                        borderColor = RGB(139, 92, 246);
+                    }
                 } else {
-                    // Neutral Dark Slate buttons
+                    // Neutral Slate
                     if (isPressed) {
                         bgColor = RGB(15, 23, 42);
                         borderColor = RGB(71, 85, 105);
@@ -287,7 +306,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 HGDIOBJ oldBrush = SelectObject(pDIS->hDC, btnBrush);
                 HGDIOBJ oldPen = SelectObject(pDIS->hDC, pen);
 
-                // Draw rounded rectangle button
                 RoundRect(pDIS->hDC, pDIS->rcItem.left, pDIS->rcItem.top, pDIS->rcItem.right, pDIS->rcItem.bottom, 8, 8);
 
                 SelectObject(pDIS->hDC, oldBrush);
@@ -295,7 +313,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 DeleteObject(btnBrush);
                 DeleteObject(pen);
 
-                // Draw button text
                 wchar_t btnText[64];
                 GetWindowTextW(pDIS->hwndItem, btnText, 64);
                 SetBkMode(pDIS->hDC, TRANSPARENT);
@@ -321,16 +338,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             switch (wmId) {
                 case IDC_BTN_START: ActionStartService(); break;
                 case IDC_BTN_STOP: ActionStopService(); break;
-                case IDC_BTN_RESTART: ActionRestartService(); break;
-                case IDC_BTN_INSTALL: ActionInstallService(); break;
+                case IDC_BTN_FIXDISCORD: ActionFixDiscord(); break;
                 case IDC_BTN_BLACKLIST: ActionEditBlacklist(); break;
-                case IDC_BTN_CONSOLE: ActionRunConsole(); break;
+                case IDC_BTN_TOGGLEMODE: ActionToggleMode(); break;
+                case IDC_BTN_INSTALL: ActionInstallService(g_fullMode); break;
                 case ID_TRAY_SHOW:
                     ShowWindow(hWnd, SW_RESTORE);
                     SetForegroundWindow(hWnd);
                     break;
                 case ID_TRAY_START: ActionStartService(); break;
                 case ID_TRAY_STOP: ActionStopService(); break;
+                case ID_TRAY_FIX: ActionFixDiscord(); break;
                 case ID_TRAY_EDIT: ActionEditBlacklist(); break;
                 case ID_TRAY_EXIT:
                     DestroyWindow(hWnd);
@@ -349,7 +367,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             FillRect(hdc, &clientRect, g_hBgBrush);
             SetBkMode(hdc, TRANSPARENT);
 
-            // App Title
+            // Title
             SelectObject(hdc, g_hFontTitle);
             SetTextColor(hdc, RGB(248, 250, 252));
             TextOutW(hdc, 35, 20, L"DustDPI", 7);
@@ -359,46 +377,48 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             SetTextColor(hdc, RGB(96, 165, 250));
             TextOutW(hdc, 140, 27, L"Secici Ag Optimizasyon ve Servis Yoneticisi", 42);
 
-            // Explanation / Scope
+            // Description
             SelectObject(hdc, g_hFontNormal);
             SetTextColor(hdc, RGB(148, 163, 184));
             TextOutW(hdc, 35, 52, L"Discord, Roblox ve hedef istemciler icin baglanti optimizasyonu saglar.", 68);
 
             // Status Card (Panel: 35, 82, 480, 162)
             RECT cardRect = { 35, 82, 480, 162 };
-            HBRUSH cardBrd = CreateSolidBrush(RGB(35, 47, 72));
             HPEN cardPen = CreatePen(PS_SOLID, 1, RGB(35, 47, 72));
             HGDIOBJ oldB = SelectObject(hdc, g_hCardBrush);
             HGDIOBJ oldP = SelectObject(hdc, cardPen);
             RoundRect(hdc, cardRect.left, cardRect.top, cardRect.right, cardRect.bottom, 10, 10);
             SelectObject(hdc, oldB);
             SelectObject(hdc, oldP);
-            DeleteObject(cardBrd);
             DeleteObject(cardPen);
 
-            // Status Badge / Indicator
+            // Status Badge
             SelectObject(hdc, g_hFontStatus);
             if (g_curState == STATE_RUNNING) {
-                SetTextColor(hdc, RGB(52, 211, 153)); // Emerald green
-                TextOutW(hdc, 55, 96, L"[ DEVREDE ] - DustDPI Servisi Calisiyor", 38);
+                SetTextColor(hdc, RGB(52, 211, 153));
+                if (g_fullMode) {
+                    TextOutW(hdc, 55, 96, L"[ DEVREDE ] - DustDPI Servisi Calisiyor (Tam Mod)", 49);
+                } else {
+                    TextOutW(hdc, 55, 96, L"[ DEVREDE ] - DustDPI Servisi Calisiyor (Secici Mod)", 52);
+                }
 
                 SelectObject(hdc, g_hFontSub);
                 SetTextColor(hdc, RGB(148, 163, 184));
-                TextOutW(hdc, 55, 126, L"Secici ag optimizasyonu ve yerel DNS yonlendirmesi devrede.", 58);
+                TextOutW(hdc, 55, 126, L"Port 1253 yerel DNS yonlendirmesi ve paket optimizasyonu aktif.", 62);
             } else if (g_curState == STATE_STOPPED) {
-                SetTextColor(hdc, RGB(248, 113, 113)); // Red
+                SetTextColor(hdc, RGB(248, 113, 113));
                 TextOutW(hdc, 55, 96, L"[ DURDURULDU ] - Servis Kapali", 29);
 
                 SelectObject(hdc, g_hFontSub);
                 SetTextColor(hdc, RGB(148, 163, 184));
                 TextOutW(hdc, 55, 126, L"Servis su an pasif durumda. 'Servisi Baslat' tusuna basin.", 57);
             } else if (g_curState == STATE_NOT_INSTALLED) {
-                SetTextColor(hdc, RGB(251, 191, 36)); // Amber
+                SetTextColor(hdc, RGB(251, 191, 36));
                 TextOutW(hdc, 55, 96, L"[ KURULU DEGIL ] - Servis Kaydi Bulunamadi", 41);
 
                 SelectObject(hdc, g_hFontSub);
                 SetTextColor(hdc, RGB(148, 163, 184));
-                TextOutW(hdc, 55, 126, L"Sisteme kaydetmek icin 'Servisi Onar / Kur' tusuna basin.", 56);
+                TextOutW(hdc, 55, 126, L"Sisteme kaydetmek icin 'Servisi Sifirla / Kur' tusuna basin.", 58);
             } else {
                 SetTextColor(hdc, RGB(192, 132, 252));
                 TextOutW(hdc, 55, 96, L"[ ISLEM YAPILIYOR... ]", 22);
@@ -456,7 +476,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
-    // Single instance check
     HANDLE hMutex = CreateMutexW(NULL, TRUE, L"DustStudio_DustDPI_GUI_Mutex");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         HWND existing = FindWindowW(L"DustDPIGUIClass", NULL);
@@ -477,7 +496,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow) {
     wc.lpszClassName = L"DustDPIGUIClass";
     wc.hCursor = LoadCursorW(NULL, IDC_ARROW);
     wc.hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(1));
-    wc.hbrBackground = NULL; // Handled in WM_PAINT to prevent flicker
+    wc.hbrBackground = NULL;
     RegisterClassExW(&wc);
 
     int w = 530;

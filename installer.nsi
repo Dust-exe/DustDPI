@@ -71,7 +71,9 @@ Section "MainSection" SEC01
   File "DustDPI.exe"
   File "DustDPI_Manager.bat"
   File "blacklist.txt"
+  File "discord_fix_and_start.cmd"
   File "service_install.cmd"
+  File "service_install_full_mode.cmd"
   File "service_remove.cmd"
   File "start_console.cmd"
   File "start_service.cmd"
@@ -96,9 +98,9 @@ Section "MainSection" SEC01
 
   ; 2. Yeni DustDPI servisini kur
   ${If} ${RunningX64}
-    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\dust_engine.exe\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
+    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\dust_engine.exe\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
   ${Else}
-    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\dust_engine.exe\" -9 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
+    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\dust_engine.exe\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
   ${EndIf}
 
   nsExec::ExecToLog 'sc.exe description "DustDPI" "Dust Studio Selective Network Optimization Service"'
@@ -107,6 +109,7 @@ Section "MainSection" SEC01
   ; Shortcuts
   CreateDirectory "$SMPROGRAMS\DustDPI"
   CreateShortcut "$SMPROGRAMS\DustDPI\DustDPI.lnk" "$INSTDIR\DustDPI.exe" "" "$INSTDIR\app.ico" 0
+  CreateShortcut "$SMPROGRAMS\DustDPI\Discord Onar ve Baslat.lnk" "$INSTDIR\discord_fix_and_start.cmd" "" "$INSTDIR\app.ico" 0
   CreateShortcut "$SMPROGRAMS\DustDPI\Servisi Baslat.lnk" "$INSTDIR\start_service.cmd" "" "$INSTDIR\app.ico" 0
   CreateShortcut "$SMPROGRAMS\DustDPI\Servisi Durdur.lnk" "$INSTDIR\stop_service.cmd" "" "$INSTDIR\app.ico" 0
   CreateShortcut "$SMPROGRAMS\DustDPI\Hedef Listesi (Blacklist).lnk" "notepad.exe" "$INSTDIR\blacklist.txt"
