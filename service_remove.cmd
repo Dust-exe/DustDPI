@@ -9,8 +9,6 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 echo [*] Servis durduruluyor ve siliniyor...
-sc stop "GoodbyeDPI" >nul 2>&1
-sc delete "GoodbyeDPI" >nul 2>&1
 sc stop "DustDPI" >nul 2>&1
 sc delete "DustDPI" >nul 2>&1
 

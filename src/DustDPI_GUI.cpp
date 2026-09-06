@@ -57,7 +57,7 @@ ServiceState QueryDpiService() {
     SC_HANDLE scm = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
     if (!scm) return STATE_UNKNOWN;
 
-    SC_HANDLE svc = OpenServiceA(scm, "GoodbyeDPI", SERVICE_QUERY_STATUS);
+    SC_HANDLE svc = OpenServiceA(scm, "DustDPI", SERVICE_QUERY_STATUS);
     if (!svc) {
         CloseServiceHandle(scm);
         return STATE_NOT_INSTALLED;
@@ -85,25 +85,25 @@ void RunCmdAsync(const std::string& cmd, bool elevated = false) {
 }
 
 void ActionStartService() {
-    RunCmdAsync("sc.exe start \"GoodbyeDPI\"", true);
+    RunCmdAsync("sc.exe start \"DustDPI\"", true);
 }
 
 void ActionStopService() {
-    RunCmdAsync("sc.exe stop \"GoodbyeDPI\"", true);
+    RunCmdAsync("sc.exe stop \"DustDPI\"", true);
 }
 
 void ActionRestartService() {
-    RunCmdAsync("sc.exe stop \"GoodbyeDPI\" & timeout /t 1 & sc.exe start \"GoodbyeDPI\"", true);
+    RunCmdAsync("sc.exe stop \"DustDPI\" & timeout /t 1 & sc.exe start \"DustDPI\"", true);
 }
 
 void ActionInstallService() {
     std::string dir = GetAppDirectory();
-    std::string exe64 = dir + "\\x86_64\\goodbyedpi.exe";
+    std::string exe64 = dir + "\\x86_64\\dust_engine.exe";
     std::string bl = dir + "\\blacklist.txt";
-    std::string cmd = "sc.exe stop \"GoodbyeDPI\" & sc.exe delete \"GoodbyeDPI\" & ";
-    cmd += "sc.exe create \"GoodbyeDPI\" binPath= \"\\\"" + exe64 + "\\\" -5 --set-ttl 5 --blacklist \\\"" + bl + "\\\"\" start= auto DisplayName= \"DustDPI - Selective Service\" & ";
-    cmd += "sc.exe description \"GoodbyeDPI\" \"Dust Studio Selective DPI Circumvention Service\" & ";
-    cmd += "sc.exe start \"GoodbyeDPI\"";
+    std::string cmd = "sc.exe stop \"DustDPI\" & sc.exe delete \"DustDPI\" & ";
+    cmd += "sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + "\\\" -5 --set-ttl 5 --blacklist \\\"" + bl + "\\\"\" start= auto DisplayName= \"DustDPI - Selective Service\" & ";
+    cmd += "sc.exe description \"DustDPI\" \"Dust Studio Selective DPI Circumvention Service\" & ";
+    cmd += "sc.exe start \"DustDPI\"";
     RunCmdAsync(cmd, true);
 }
 
@@ -114,7 +114,7 @@ void ActionEditBlacklist() {
 
 void ActionRunConsole() {
     std::string dir = GetAppDirectory();
-    std::string exe64 = dir + "\\x86_64\\goodbyedpi.exe";
+    std::string exe64 = dir + "\\x86_64\\dust_engine.exe";
     std::string bl = dir + "\\blacklist.txt";
     std::string args = "/k title DustDPI Console Test & \"" + exe64 + "\" -5 --set-ttl 5 --blacklist \"" + bl + "\"";
     ShellExecuteA(NULL, "runas", "cmd.exe", args.c_str(), dir.c_str(), SW_SHOW);
@@ -230,7 +230,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     DestroyWindow(hWnd);
                     break;
             }
-            // Trigger status refresh
             SetTimer(hWnd, 2, 400, NULL);
             break;
         }
@@ -242,53 +241,50 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             RECT clientRect;
             GetClientRect(hWnd, &clientRect);
 
-            // Fill background
             FillRect(hdc, &clientRect, g_hBgBrush);
-
             SetBkMode(hdc, TRANSPARENT);
 
             // Title
             SelectObject(hdc, g_hFontTitle);
-            SetTextColor(hdc, RGB(245, 243, 255)); // Near white
+            SetTextColor(hdc, RGB(245, 243, 255));
             TextOutA(hdc, 35, 22, "DustDPI", 7);
 
             // Subtitle
             SelectObject(hdc, g_hFontSub);
-            SetTextColor(hdc, RGB(167, 139, 250)); // Purple-400
+            SetTextColor(hdc, RGB(167, 139, 250));
             TextOutA(hdc, 130, 29, "•  Secici DPI Bypass & Guvenlik Kalkanı", 41);
 
-            // Description info
-            SetTextColor(hdc, RGB(161, 161, 170)); // Zinc-400
+            // Description
+            SetTextColor(hdc, RGB(161, 161, 170));
             TextOutA(hdc, 35, 52, "Discord, Roblox ve Turkiye engelli hedefleri filtreler; diger uygulamalara dokunmaz.", 85);
 
             // Status Card Box
             RECT cardRect = { 35, 85, 455, 145 };
             FillRect(hdc, &cardRect, g_hCardBrush);
 
-            // Draw card border
-            HBRUSH borderBrush = CreateSolidBrush(RGB(76, 29, 149)); // Purple border
+            HBRUSH borderBrush = CreateSolidBrush(RGB(76, 29, 149));
             FrameRect(hdc, &cardRect, borderBrush);
             DeleteObject(borderBrush);
 
-            // Draw status indicator
+            // Status Indicator
             SelectObject(hdc, g_hFontStatus);
             if (g_curState == STATE_RUNNING) {
-                SetTextColor(hdc, RGB(52, 211, 153)); // Emerald green
-                TextOutA(hdc, 55, 103, "●  DURUM: AKTIF (Servis Calisiyor)", 34);
+                SetTextColor(hdc, RGB(52, 211, 153));
+                TextOutA(hdc, 55, 103, "●  DURUM: AKTIF (DustDPI Calisiyor)", 35);
             } else if (g_curState == STATE_STOPPED) {
-                SetTextColor(hdc, RGB(248, 113, 113)); // Rose red
+                SetTextColor(hdc, RGB(248, 113, 113));
                 TextOutA(hdc, 55, 103, "●  DURUM: DURDURULDU (Servis Kapali)", 37);
             } else if (g_curState == STATE_NOT_INSTALLED) {
-                SetTextColor(hdc, RGB(251, 191, 36)); // Amber
+                SetTextColor(hdc, RGB(251, 191, 36));
                 TextOutA(hdc, 55, 103, "●  DURUM: KURULU DEGIL ('Yeniden Kur'a basin)", 45);
             } else {
-                SetTextColor(hdc, RGB(192, 132, 252)); // Purple
+                SetTextColor(hdc, RGB(192, 132, 252));
                 TextOutA(hdc, 55, 103, "●  DURUM: ISLEM YAPILIYOR...", 27);
             }
 
-            // Footer info
+            // Footer
             SelectObject(hdc, g_hFontSub);
-            SetTextColor(hdc, RGB(113, 113, 122)); // Zinc-500
+            SetTextColor(hdc, RGB(113, 113, 122));
             TextOutA(hdc, 35, 332, "Dust Studio  •  dust-studio.com  •  Antigravity IDE & Oyun Uyumlu", 66);
 
             EndPaint(hWnd, &ps);

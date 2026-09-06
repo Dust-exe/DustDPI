@@ -65,12 +65,12 @@ Section "MainSection" SEC01
 
   ; Copy binaries
   SetOutPath "$INSTDIR\x86_64"
-  File "x86_64\goodbyedpi.exe"
+  File "x86_64\dust_engine.exe"
   File "x86_64\WinDivert.dll"
   File "x86_64\WinDivert64.sys"
 
   SetOutPath "$INSTDIR\x86"
-  File "x86\goodbyedpi.exe"
+  File "x86\dust_engine.exe"
   File "x86\WinDivert.dll"
   File "x86\WinDivert32.sys"
   File "x86\WinDivert64.sys"
@@ -78,20 +78,18 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
 
   ; 1. Eski servisleri temizle
-  nsExec::ExecToLog 'sc.exe stop "GoodbyeDPI"'
-  nsExec::ExecToLog 'sc.exe delete "GoodbyeDPI"'
   nsExec::ExecToLog 'sc.exe stop "DustDPI"'
   nsExec::ExecToLog 'sc.exe delete "DustDPI"'
 
-  ; 2. Yeni GoodbyeDPI servisini kur (DisplayName = DustDPI)
+  ; 2. Yeni DustDPI servisini kur
   ${If} ${RunningX64}
-    nsExec::ExecToLog 'sc.exe create "GoodbyeDPI" binPath= "\"$INSTDIR\x86_64\goodbyedpi.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"'
+    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\dust_engine.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"'
   ${Else}
-    nsExec::ExecToLog 'sc.exe create "GoodbyeDPI" binPath= "\"$INSTDIR\x86\goodbyedpi.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"'
+    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\dust_engine.exe\" -5 --set-ttl 5 --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI - Selective Service"'
   ${EndIf}
 
-  nsExec::ExecToLog 'sc.exe description "GoodbyeDPI" "Dust Studio Selective DPI Circumvention Service"'
-  nsExec::ExecToLog 'sc.exe start "GoodbyeDPI"'
+  nsExec::ExecToLog 'sc.exe description "DustDPI" "Dust Studio Selective DPI Circumvention Service"'
+  nsExec::ExecToLog 'sc.exe start "DustDPI"'
 
   ; Shortcuts
   CreateDirectory "$SMPROGRAMS\DustDPI"
@@ -131,8 +129,6 @@ FunctionEnd
 
 Section Uninstall
   ; Servisi ve sürücüleri durdurup sil
-  nsExec::ExecToLog 'sc.exe stop "GoodbyeDPI"'
-  nsExec::ExecToLog 'sc.exe delete "GoodbyeDPI"'
   nsExec::ExecToLog 'sc.exe stop "DustDPI"'
   nsExec::ExecToLog 'sc.exe delete "DustDPI"'
   nsExec::ExecToLog 'sc.exe stop "WinDivert"'

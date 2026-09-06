@@ -6,7 +6,7 @@ IF %ERRORLEVEL% NEQ 0 (
     pause
     exit /B 1
 )
-sc start "GoodbyeDPI"
+sc start "DustDPI"
 echo.
-sc query "GoodbyeDPI"
+sc query "DustDPI"
 pause
