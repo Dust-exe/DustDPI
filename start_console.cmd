@@ -16,7 +16,7 @@ IF DEFINED PROCESSOR_ARCHITEW6432 (set _arch=x86_64)
 
 echo [*] Launching DustDPI in live foreground mode...
 echo [*] Press Ctrl+C at any time to terminate the engine.
-echo.
-"%_arch%\dust_engine.exe" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist "blacklist.txt"
+icacls "blacklist.txt" /grant *S-1-5-32-545:(M) >nul 2>&1
+"%_arch%\dust_engine.exe" -5 -q --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist "blacklist.txt"
 POPD
 pause

@@ -1,6 +1,10 @@
 #define WIN32_LEAN_AND_MEAN
+#ifndef UNICODE
 #define UNICODE
+#endif
+#ifndef _UNICODE
 #define _UNICODE
+#endif
 #include <windows.h>
 #include <shellapi.h>
 #include <commctrl.h>
@@ -31,13 +35,55 @@
 #define IDC_BTN_INSTALL    106
 
 // Filter Dialog Control IDs
-#define IDC_FILTER_LIST    301
-#define IDC_FILTER_EDIT    302
-#define IDC_FILTER_ADD     303
-#define IDC_FILTER_REMOVE  304
-#define IDC_FILTER_NOTEPAD 305
-#define IDC_FILTER_SAVE    306
-#define IDC_FILTER_CLOSE   307
+#define IDC_FILTER_LIST           301
+#define IDC_FILTER_EDIT           302
+#define IDC_FILTER_ADD            303
+#define IDC_FILTER_REMOVE         304
+#define IDC_FILTER_NOTEPAD        305
+#define IDC_FILTER_SAVE           306
+#define IDC_FILTER_CLOSE          307
+#define IDC_FILTER_PRESET_ROBLOX  308
+#define IDC_FILTER_PRESET_DISCORD 309
+#define IDC_FILTER_RELOAD         310
+
+static const wchar_t* const g_robloxPresetDomains[] = {
+    L"roblox.com",
+    L"rbxcdn.com",
+    L"robloxlabs.com",
+    L"setup.rbxcdn.com",
+    L"rbxmanagers.com",
+    L"rbxtest.com",
+    L"rbx.com",
+    L"roblox.cloud"
+};
+static const int g_robloxPresetCount = 8;
+
+static const wchar_t* const g_discordPresetDomains[] = {
+    L"discord.com",
+    L"discord.gg",
+    L"discord.co",
+    L"discord.media",
+    L"discord.dev",
+    L"discord.new",
+    L"discord.gift",
+    L"discordapp.com",
+    L"discordapp.net",
+    L"discordcdn.com",
+    L"discordstatus.com",
+    L"status.discord.com",
+    L"gateway.discord.gg",
+    L"cdn.discordapp.com",
+    L"media.discordapp.net",
+    L"images-ext-1.discordapp.net",
+    L"images-ext-2.discordapp.net",
+    L"dl-media.discordapp.net",
+    L"dis.gd",
+    L"updates.discord.com",
+    L"latency.discord.media",
+    L"router.discord.media",
+    L"stun.discord.media"
+};
+static const int g_discordPresetCount = 23;
 
 enum ServiceState {
     STATE_UNKNOWN,
@@ -75,6 +121,24 @@ std::wstring GetAppDirectoryW() {
         if (lastSlash) *lastSlash = L'\0';
     }
     return std::wstring(g_appDir);
+}
+
+void EnsureBlacklistWritable() {
+    std::wstring blPath = GetAppDirectoryW() + L"\\blacklist.txt";
+    DWORD attr = GetFileAttributesW(blPath.c_str());
+    if (attr == INVALID_FILE_ATTRIBUTES) {
+        std::ofstream createDefault(std::string(blPath.begin(), blPath.end()));
+        if (createDefault.is_open()) {
+            for (int i = 0; i < g_robloxPresetCount; i++) {
+                std::wstring ws(g_robloxPresetDomains[i]);
+                createDefault << std::string(ws.begin(), ws.end()) << "\n";
+            }
+            createDefault.close();
+        }
+    }
+    // Grant modify permission to BUILTIN\\Users (*S-1-5-32-545) so Notepad and user editors can save with Ctrl+S without Access Denied
+    std::wstring cmd = L"/c icacls \"" + blPath + L"\" /grant *S-1-5-32-545:(M) >nul 2>&1";
+    ShellExecuteW(NULL, L"open", L"cmd.exe", cmd.c_str(), GetAppDirectoryW().c_str(), SW_HIDE);
 }
 
 int CountBlacklistDomains() {
@@ -123,12 +187,52 @@ void RunCmdAsyncW(const std::wstring& cmd, bool elevated = false) {
     ShellExecuteW(NULL, elevated ? L"runas" : L"open", L"cmd.exe", (L"/c " + cmd).c_str(), GetAppDirectoryW().c_str(), SW_HIDE);
 }
 
+bool RestartDpiService() {
+    SC_HANDLE scm = OpenSCManagerW(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+    if (!scm) scm = OpenSCManagerW(NULL, NULL, SC_MANAGER_CONNECT);
+    if (!scm) {
+        RunCmdAsyncW(L"net stop \"DustDPI\" & net start \"DustDPI\"", true);
+        return false;
+    }
+
+    SC_HANDLE svc = OpenServiceW(scm, L"DustDPI", SERVICE_STOP | SERVICE_START | SERVICE_QUERY_STATUS);
+    if (!svc) {
+        CloseServiceHandle(scm);
+        RunCmdAsyncW(L"net stop \"DustDPI\" & net start \"DustDPI\"", true);
+        return false;
+    }
+
+    SERVICE_STATUS status;
+    ControlService(svc, SERVICE_CONTROL_STOP, &status);
+
+    // Wait for the service to fully stop to prevent Error 1056 (already running race condition)
+    for (int i = 0; i < 40; i++) {
+        SERVICE_STATUS_PROCESS ssp;
+        DWORD bytesNeeded;
+        if (QueryServiceStatusEx(svc, SC_STATUS_PROCESS_INFO, (LPBYTE)&ssp, sizeof(ssp), &bytesNeeded)) {
+            if (ssp.dwCurrentState == SERVICE_STOPPED) {
+                break;
+            }
+        }
+        Sleep(100);
+    }
+
+    BOOL ok = StartServiceW(svc, 0, NULL);
+    CloseServiceHandle(svc);
+    CloseServiceHandle(scm);
+
+    if (!ok) {
+        RunCmdAsyncW(L"net stop \"DustDPI\" & net start \"DustDPI\"", true);
+    }
+    return ok != FALSE;
+}
+
 void ActionStartService() {
-    RunCmdAsyncW(L"sc.exe start \"DustDPI\"", true);
+    RunCmdAsyncW(L"net start \"DustDPI\"", true);
 }
 
 void ActionStopService() {
-    RunCmdAsyncW(L"sc.exe stop \"DustDPI\"", true);
+    RunCmdAsyncW(L"net stop \"DustDPI\"", true);
 }
 
 void ActionFixNetwork() {
@@ -141,14 +245,15 @@ void ActionInstallService(bool fullMode = false) {
     std::wstring dir = GetAppDirectoryW();
     std::wstring exe64 = dir + L"\\x86_64\\dust_engine.exe";
     std::wstring bl = dir + L"\\blacklist.txt";
-    std::wstring cmd = L"sc.exe stop \"DustDPI\" & sc.exe delete \"DustDPI\" & ";
+    EnsureBlacklistWritable();
+    std::wstring cmd = L"net stop \"DustDPI\" >nul 2>&1 & sc.exe delete \"DustDPI\" >nul 2>&1 & ";
     if (fullMode) {
-        cmd += L"sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + L"\\\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253\" start= auto DisplayName= \"DustDPI Service\" & ";
+        cmd += L"sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + L"\\\" -5 -q --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253\" start= auto DisplayName= \"DustDPI Service\" & ";
     } else {
-        cmd += L"sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + L"\\\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \\\"" + bl + L"\\\"\" start= auto DisplayName= \"DustDPI Service\" & ";
+        cmd += L"sc.exe create \"DustDPI\" binPath= \"\\\"" + exe64 + L"\\\" -5 -q --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \\\"" + bl + L"\\\"\" start= auto DisplayName= \"DustDPI Service\" & ";
     }
     cmd += L"sc.exe description \"DustDPI\" \"Dust Studio High-Performance Internet Freedom & Selective Traffic Optimization Service\" & ";
-    cmd += L"sc.exe start \"DustDPI\"";
+    cmd += L"net start \"DustDPI\"";
     RunCmdAsyncW(cmd, true);
 }
 
@@ -163,7 +268,27 @@ void ActionToggleMode() {
     InvalidateRect(g_hMainWnd, NULL, FALSE);
 }
 
-void ActionOpenNotepad() {
+void ActionOpenNotepad(HWND hList = NULL) {
+    EnsureBlacklistWritable();
+    if (hList) {
+        int count = (int)SendMessageW(hList, LB_GETCOUNT, 0, 0);
+        std::vector<std::string> domains;
+        for (int i = 0; i < count; i++) {
+            wchar_t buf[256] = {0};
+            SendMessageW(hList, LB_GETTEXT, i, (LPARAM)buf);
+            std::wstring ws(buf);
+            std::string s(ws.begin(), ws.end());
+            if (!s.empty()) domains.push_back(s);
+        }
+        std::sort(domains.begin(), domains.end());
+        domains.erase(std::unique(domains.begin(), domains.end()), domains.end());
+        std::wstring blPath = GetAppDirectoryW() + L"\\blacklist.txt";
+        std::ofstream file(std::string(blPath.begin(), blPath.end()), std::ios::trunc);
+        if (file.is_open()) {
+            for (const auto& d : domains) file << d << "\n";
+            file.close();
+        }
+    }
     std::wstring bl = GetAppDirectoryW() + L"\\blacklist.txt";
     ShellExecuteW(NULL, L"open", L"notepad.exe", bl.c_str(), NULL, SW_SHOW);
 }
@@ -257,6 +382,15 @@ void PopulateFilterList(HWND hList) {
     }
 }
 
+int AddDomainToFilterList(HWND hList, const std::wstring& domain) {
+    if (domain.empty()) return -1;
+    LRESULT findIdx = SendMessageW(hList, LB_FINDSTRINGEXACT, -1, (LPARAM)domain.c_str());
+    if (findIdx != LB_ERR) {
+        return (int)findIdx;
+    }
+    return (int)SendMessageW(hList, LB_ADDSTRING, 0, (LPARAM)domain.c_str());
+}
+
 void SaveFilterListToFile(HWND hList) {
     int count = (int)SendMessageW(hList, LB_GETCOUNT, 0, 0);
     std::vector<std::string> domains;
@@ -274,6 +408,8 @@ void SaveFilterListToFile(HWND hList) {
     std::sort(domains.begin(), domains.end());
     domains.erase(std::unique(domains.begin(), domains.end()), domains.end());
 
+    EnsureBlacklistWritable();
+
     std::wstring blPath = GetAppDirectoryW() + L"\\blacklist.txt";
     std::ofstream file(std::string(blPath.begin(), blPath.end()), std::ios::trunc);
     if (file.is_open()) {
@@ -289,7 +425,7 @@ void SaveFilterListToFile(HWND hList) {
     }
 
     if (QueryDpiService() == STATE_RUNNING) {
-        RunCmdAsyncW(L"sc.exe stop \"DustDPI\" & sc.exe start \"DustDPI\"", true);
+        RestartDpiService();
     }
 }
 
@@ -322,16 +458,38 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             HWND hList = CreateWindowExW(
                 WS_EX_CLIENTEDGE, L"LISTBOX", L"",
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY | LBS_HASSTRINGS,
-                30, 75, 455, 230,
+                30, 75, 465, 190,
                 hWnd, (HMENU)IDC_FILTER_LIST, GetModuleHandleW(NULL), NULL
             );
             SendMessageW(hList, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
+
+            // One-click Preset row
+            CreateWindowExW(
+                0, L"BUTTON", L"+ Roblox Suite",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+                30, 276, 145, 34,
+                hWnd, (HMENU)IDC_FILTER_PRESET_ROBLOX, GetModuleHandleW(NULL), NULL
+            );
+
+            CreateWindowExW(
+                0, L"BUTTON", L"+ Discord Suite",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+                185, 276, 145, 34,
+                hWnd, (HMENU)IDC_FILTER_PRESET_DISCORD, GetModuleHandleW(NULL), NULL
+            );
+
+            CreateWindowExW(
+                0, L"BUTTON", L"Sync / Reload",
+                WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+                340, 276, 155, 34,
+                hWnd, (HMENU)IDC_FILTER_RELOAD, GetModuleHandleW(NULL), NULL
+            );
 
             // Edit box
             HWND hEdit = CreateWindowExW(
                 WS_EX_CLIENTEDGE, L"EDIT", L"",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL,
-                30, 335, 320, 34,
+                30, 345, 335, 34,
                 hWnd, (HMENU)IDC_FILTER_EDIT, GetModuleHandleW(NULL), NULL
             );
             SendMessageW(hEdit, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
@@ -340,7 +498,7 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             CreateWindowExW(
                 0, L"BUTTON", L"+ Add Domain",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-                365, 335, 120, 34,
+                375, 345, 120, 34,
                 hWnd, (HMENU)IDC_FILTER_ADD, GetModuleHandleW(NULL), NULL
             );
 
@@ -348,7 +506,7 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             CreateWindowExW(
                 0, L"BUTTON", L"- Remove Selected",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-                30, 385, 155, 36,
+                30, 390, 150, 36,
                 hWnd, (HMENU)IDC_FILTER_REMOVE, GetModuleHandleW(NULL), NULL
             );
 
@@ -356,7 +514,7 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             CreateWindowExW(
                 0, L"BUTTON", L"Open in Notepad",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-                200, 385, 145, 36,
+                190, 390, 145, 36,
                 hWnd, (HMENU)IDC_FILTER_NOTEPAD, GetModuleHandleW(NULL), NULL
             );
 
@@ -364,7 +522,7 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             CreateWindowExW(
                 0, L"BUTTON", L"Cancel",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-                360, 385, 125, 36,
+                345, 390, 150, 36,
                 hWnd, (HMENU)IDC_FILTER_CLOSE, GetModuleHandleW(NULL), NULL
             );
 
@@ -372,11 +530,23 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             CreateWindowExW(
                 0, L"BUTTON", L"Save & Apply Filter Changes",
                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-                30, 435, 455, 42,
+                30, 438, 465, 44,
                 hWnd, (HMENU)IDC_FILTER_SAVE, GetModuleHandleW(NULL), NULL
             );
 
+            EnsureBlacklistWritable();
             PopulateFilterList(hList);
+            break;
+        }
+
+        case WM_ACTIVATE: {
+            if (LOWORD(wParam) != WA_INACTIVE) {
+                // When returning focus from Notepad, automatically refresh list from disk
+                HWND hList = GetDlgItem(hWnd, IDC_FILTER_LIST);
+                if (hList) {
+                    PopulateFilterList(hList);
+                }
+            }
             break;
         }
 
@@ -415,6 +585,18 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
                     bgColor = isPressed ? RGB(75, 25, 25) : RGB(69, 26, 26);
                     borderColor = RGB(220, 38, 38);
                     textColor = RGB(254, 242, 242);
+                } else if (pDIS->CtlID == IDC_FILTER_PRESET_ROBLOX) {
+                    bgColor = isPressed ? RGB(14, 60, 95) : RGB(20, 75, 120);
+                    borderColor = RGB(56, 189, 248);
+                    textColor = RGB(224, 242, 254);
+                } else if (pDIS->CtlID == IDC_FILTER_PRESET_DISCORD) {
+                    bgColor = isPressed ? RGB(50, 35, 90) : RGB(70, 48, 125);
+                    borderColor = RGB(167, 139, 250);
+                    textColor = RGB(237, 233, 254);
+                } else if (pDIS->CtlID == IDC_FILTER_RELOAD) {
+                    bgColor = isPressed ? RGB(30, 25, 45) : RGB(40, 32, 60);
+                    borderColor = RGB(148, 163, 184);
+                    textColor = RGB(226, 232, 240);
                 }
 
                 HBRUSH b = CreateSolidBrush(bgColor);
@@ -434,7 +616,7 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
                 SetBkMode(pDIS->hDC, TRANSPARENT);
                 SetTextColor(pDIS->hDC, textColor);
                 SelectObject(pDIS->hDC, g_hFontBtn);
-                DrawTextW(pDIS->hDC, text, -1, &pDIS->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                DrawTextW(pDIS->hDC, text, -1, &pDIS->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
                 return TRUE;
             }
             break;
@@ -446,17 +628,83 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             HWND hEdit = GetDlgItem(hWnd, IDC_FILTER_EDIT);
 
             switch (wmId) {
+                case IDC_FILTER_PRESET_ROBLOX: {
+                    for (int i = 0; i < g_robloxPresetCount; i++) {
+                        AddDomainToFilterList(hList, g_robloxPresetDomains[i]);
+                    }
+                    InvalidateRect(hWnd, NULL, FALSE);
+                    MessageBoxW(hWnd,
+                        L"All Roblox core domains and CDNs added:\n\n"
+                        L"- roblox.com (Main Site & APIs)\n"
+                        L"- rbxcdn.com (3D Assets, Textures & Engine)\n"
+                        L"- robloxlabs.com & setup.rbxcdn.com\n"
+                        L"- rbxmanagers.com, rbxtest.com, rbx.com, roblox.cloud\n\n"
+                        L"Click 'Save & Apply Filter Changes' to activate.",
+                        L"Roblox Suite Added", MB_ICONINFORMATION);
+                    break;
+                }
+
+                case IDC_FILTER_PRESET_DISCORD: {
+                    for (int i = 0; i < g_discordPresetCount; i++) {
+                        AddDomainToFilterList(hList, g_discordPresetDomains[i]);
+                    }
+                    InvalidateRect(hWnd, NULL, FALSE);
+                    MessageBoxW(hWnd,
+                        L"All Discord voice, gateway and CDN domains added:\n\n"
+                        L"- discord.com, discord.gg, discord.media\n"
+                        L"- discordapp.com, discordapp.net, discordcdn.com\n"
+                        L"- gateway.discord.gg, cdn.discordapp.com, media.discordapp.net\n\n"
+                        L"Click 'Save & Apply Filter Changes' to activate.",
+                        L"Discord Suite Added", MB_ICONINFORMATION);
+                    break;
+                }
+
+                case IDC_FILTER_RELOAD: {
+                    PopulateFilterList(hList);
+                    MessageBoxW(hWnd, L"Filter list reloaded from blacklist.txt successfully.", L"Sync Complete", MB_ICONINFORMATION);
+                    break;
+                }
+
                 case IDC_FILTER_ADD: {
                     wchar_t raw[256] = {0};
                     GetWindowTextW(hEdit, raw, 256);
                     std::wstring domain = SanitizeDomainInput(raw);
                     if (domain.empty()) {
-                        MessageBoxW(hWnd, L"Please enter a valid domain name (e.g. reddit.com)", L"Input Error", MB_ICONWARNING);
+                        MessageBoxW(hWnd, L"Please enter a domain name (e.g. roblox, discord, reddit.com)", L"Input Error", MB_ICONWARNING);
                         break;
                     }
-                    if (domain.find(L'.') == std::wstring::npos) {
-                        MessageBoxW(hWnd, L"Domain must include an extension (e.g. .com, .net, .org)", L"Input Error", MB_ICONWARNING);
+
+                    // Smart detection for Roblox keyword
+                    if (domain == L"roblox" || domain == L"roblox.com" || domain == L"rbx") {
+                        for (int i = 0; i < g_robloxPresetCount; i++) {
+                            AddDomainToFilterList(hList, g_robloxPresetDomains[i]);
+                        }
+                        SetWindowTextW(hEdit, L"");
+                        InvalidateRect(hWnd, NULL, FALSE);
+                        MessageBoxW(hWnd, L"Recognized 'Roblox'! All Roblox domains and required CDNs (rbxcdn.com) have been added.\n\nClick 'Save & Apply Filter Changes' to activate.", L"Roblox Suite Added", MB_ICONINFORMATION);
                         break;
+                    }
+
+                    // Smart detection for Discord keyword
+                    if (domain == L"discord" || domain == L"discord.com" || domain == L"discordapp") {
+                        for (int i = 0; i < g_discordPresetCount; i++) {
+                            AddDomainToFilterList(hList, g_discordPresetDomains[i]);
+                        }
+                        SetWindowTextW(hEdit, L"");
+                        InvalidateRect(hWnd, NULL, FALSE);
+                        MessageBoxW(hWnd, L"Recognized 'Discord'! All Discord voice, gateway and CDN domains have been added.\n\nClick 'Save & Apply Filter Changes' to activate.", L"Discord Suite Added", MB_ICONINFORMATION);
+                        break;
+                    }
+
+                    // If input has no extension (e.g. "reddit"), ask if user meant "reddit.com"
+                    if (domain.find(L'.') == std::wstring::npos) {
+                        std::wstring suggested = domain + L".com";
+                        std::wstring msg = L"Did you mean '" + suggested + L"'?\nDomains should include an extension (e.g. .com, .net, .org).\n\nClick Yes to add '" + suggested + L"'.";
+                        if (MessageBoxW(hWnd, msg.c_str(), L"Domain Auto-Complete", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+                            domain = suggested;
+                        } else {
+                            break;
+                        }
                     }
 
                     LRESULT findIdx = SendMessageW(hList, LB_FINDSTRINGEXACT, -1, (LPARAM)domain.c_str());
@@ -485,7 +733,7 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
                 }
 
                 case IDC_FILTER_NOTEPAD: {
-                    ActionOpenNotepad();
+                    ActionOpenNotepad(hList);
                     break;
                 }
 
@@ -525,7 +773,7 @@ LRESULT CALLBACK FilterWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
             // Input label
             SelectObject(hdc, g_hFontNormal);
             SetTextColor(hdc, RGB(196, 181, 253));
-            TextOutW(hdc, 30, 314, L"Add New Domain / Hostname:", 26);
+            TextOutW(hdc, 30, 322, L"Add New Domain / Hostname (or type 'roblox' / 'discord'):", 56);
 
             EndPaint(hWnd, &ps);
             break;
@@ -557,8 +805,8 @@ void OpenFilterManagerWindow(HWND hParent) {
     wc.hIcon = g_hAppIcon;
     RegisterClassExW(&wc);
 
-    int w = 530;
-    int h = 535;
+    int w = 540;
+    int h = 540;
     RECT rcParent;
     GetWindowRect(hParent, &rcParent);
     int x = rcParent.left + (rcParent.right - rcParent.left - w) / 2;
@@ -573,6 +821,7 @@ void OpenFilterManagerWindow(HWND hParent) {
         hParent, NULL, GetModuleHandleW(NULL), NULL
     );
 }
+
 
 // -------------------------------------------------------------
 // Main Dashboard Window Procedure (Cosmic Purple Black Hole Theme)
@@ -718,7 +967,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 SetBkMode(pDIS->hDC, TRANSPARENT);
                 SetTextColor(pDIS->hDC, textColor);
                 SelectObject(pDIS->hDC, g_hFontBtn);
-                DrawTextW(pDIS->hDC, btnText, -1, &pDIS->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                DrawTextW(pDIS->hDC, btnText, -1, &pDIS->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
                 return TRUE;
             }
             break;

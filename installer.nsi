@@ -102,15 +102,18 @@ Section "MainSection" SEC01
 
   SetOutPath "$INSTDIR"
 
+  ; Grant full modify permissions to blacklist.txt for standard users
+  nsExec::Exec 'icacls "$INSTDIR\blacklist.txt" /grant *S-1-5-32-545:(M)'
+
   ; Register DustDPI service
   ${If} ${RunningX64}
-    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\dust_engine.exe\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
+    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86_64\dust_engine.exe\" -5 -q --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
   ${Else}
-    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\dust_engine.exe\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
+    nsExec::ExecToLog 'sc.exe create "DustDPI" binPath= "\"$INSTDIR\x86\dust_engine.exe\" -5 -q --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"$INSTDIR\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"'
   ${EndIf}
 
   nsExec::ExecToLog 'sc.exe description "DustDPI" "Dust Studio High-Performance Internet Freedom & Selective Traffic Optimization Service"'
-  nsExec::ExecToLog 'sc.exe start "DustDPI"'
+  nsExec::ExecToLog 'net.exe start "DustDPI"'
 
   ; Start Menu Shortcuts
   CreateDirectory "$SMPROGRAMS\DustDPI"

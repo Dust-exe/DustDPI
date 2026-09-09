@@ -17,12 +17,15 @@ echo [*] Removing any legacy service registration...
 sc stop "DustDPI" >nul 2>&1
 sc delete "DustDPI" >nul 2>&1
 
+echo [*] Setting file permissions for blacklist.txt...
+icacls "%CD%\blacklist.txt" /grant *S-1-5-32-545:(M) >nul 2>&1
+
 echo [*] Registering DustDPI Selective Optimization Service...
-sc create "DustDPI" binPath= "\"%CD%\%_arch%\dust_engine.exe\" -5 --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"%CD%\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"
+sc create "DustDPI" binPath= "\"%CD%\%_arch%\dust_engine.exe\" -5 -q --set-ttl 5 --dns-addr 77.88.8.8 --dns-port 1253 --dnsv6-addr 2a02:6b8::feed:0ff --dnsv6-port 1253 --allow-no-sni --blacklist \"%CD%\blacklist.txt\"" start= auto DisplayName= "DustDPI Service"
 sc description "DustDPI" "Dust Studio High-Performance Internet Freedom & Selective Traffic Optimization Service"
 
 echo [*] Starting DustDPI service...
-sc start "DustDPI"
+net start "DustDPI"
 
 echo.
 echo [OK] DustDPI service has been installed and started successfully!

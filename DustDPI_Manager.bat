@@ -73,7 +73,13 @@ call "%~dp0service_remove.cmd"
 goto MENU
 
 :EDIT
+icacls "%~dp0blacklist.txt" /grant *S-1-5-32-545:(M) >nul 2>&1
 notepad "%~dp0blacklist.txt"
+sc query "DustDPI" | find "RUNNING" >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    net stop "DustDPI" >nul 2>&1
+    net start "DustDPI" >nul 2>&1
+)
 goto MENU
 
 :STATUS
